@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../core/constants/app_color.dart';
+import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -11,7 +11,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _isObscure = true;
+  bool _isPasswordVisible = false;
 
   @override
   void dispose() {
@@ -23,36 +23,31 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 36.0),
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const SizedBox(height: 20),
+              const SizedBox(height: 30),
 
-              // Logo Aplikasi DAMPING
+              // Logo DAMPING
               Image.asset(
                 'assets/android_fg.png',
-                height: 90,
-                errorBuilder: (context, error, stackTrace) {
-                  return const Icon(
-                    Icons.favorite,
-                    size: 80,
-                    color: AppColors.primaryBlue,
-                  );
-                },
+                width: 100,
+                height: 100,
+                fit: BoxFit.contain,
               ),
               const SizedBox(height: 12),
 
-              // Judul & Subtitle
+              // Judul & Subtitle Aplikasi
               const Text(
                 'DAMPING',
                 style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                  color: Color(0xFF0C356A),
                   letterSpacing: 1.5,
                 ),
               ),
@@ -61,102 +56,189 @@ class _LoginScreenState extends State<LoginScreen> {
                 'Aplikasi Pengelolaan Pelanggaran Siswa',
                 style: TextStyle(
                   fontSize: 12,
-                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF1E56A0),
                 ),
               ),
-              const SizedBox(height: 36),
 
-              // Teks Selamat Datang
+              const SizedBox(height: 40),
+
+              // Salam Selamat Datang
               const Align(
                 alignment: Alignment.centerLeft,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Selamat Datang',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Masuk dengan nomor HP dan password untuk melanjutkan.',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  'Selamat Datang',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF0C356A),
+                  ),
                 ),
               ),
+              const SizedBox(height: 6),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Masuk dengan nomor HP dan password\nuntuk melanjutkan.',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey,
+                    height: 1.4,
+                  ),
+                ),
+              ),
+
               const SizedBox(height: 28),
 
-              // Field Input Nomor HP
+              // Input Nomor HP
               TextField(
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(
-                  prefixIcon: Icon(Icons.phone_outlined,
-                      color: AppColors.textSecondary),
-                  hintText: 'Nomor HP (Contoh: 08123456789)',
+                decoration: InputDecoration(
+                  hintText: 'Nomor HP (contoh: 08123456789)',
                   hintStyle:
-                      TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                      TextStyle(color: Colors.grey.shade400, fontSize: 14),
+                  prefixIcon: const Icon(Icons.smartphone_rounded,
+                      color: Color(0xFF2C7DEB)),
+                  filled: true,
+                  fillColor: const Color(0xFFF8FAFC),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide:
+                        const BorderSide(color: Color(0xFF2C7DEB), width: 1.5),
+                  ),
                 ),
               ),
+
               const SizedBox(height: 16),
 
-              // Field Input Password
+              // Input Password
               TextField(
                 controller: _passwordController,
-                obscureText: _isObscure,
+                obscureText: !_isPasswordVisible,
                 decoration: InputDecoration(
-                  prefixIcon: const Icon(Icons.lock_outline,
-                      color: AppColors.textSecondary),
+                  hintText: 'Password',
+                  hintStyle:
+                      TextStyle(color: Colors.grey.shade400, fontSize: 14),
+                  prefixIcon: const Icon(Icons.lock_outline_rounded,
+                      color: Color(0xFF2C7DEB)),
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _isObscure
-                          ? Icons.visibility_off_outlined
-                          : Icons.visibility_outlined,
-                      color: AppColors.textSecondary,
+                      _isPasswordVisible
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
+                      color: Colors.grey,
                     ),
                     onPressed: () {
                       setState(() {
-                        _isObscure = !_isObscure;
+                        _isPasswordVisible = !_isPasswordVisible;
                       });
                     },
                   ),
-                  hintText: 'Password',
-                  hintStyle: const TextStyle(
-                      fontSize: 14, color: AppColors.textSecondary),
+                  filled: true,
+                  fillColor: const Color(0xFFF8FAFC),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide:
+                        const BorderSide(color: Color(0xFF2C7DEB), width: 1.5),
+                  ),
                 ),
               ),
-              const SizedBox(height: 28),
+
+              const SizedBox(height: 24),
 
               // Tombol Masuk
               SizedBox(
                 width: double.infinity,
+                height: 50,
                 child: ElevatedButton(
                   onPressed: () {
-                    // Logika login / navigasi ke Dashboard (Layar 3)
+                    // Logika masuk / login aplikasi
                   },
-                  child: const Text('Masuk'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2C7DEB),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(25),
+                    ),
+                  ),
+                  child: const Text(
+                    'Masuk',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
               ),
+
               const SizedBox(height: 16),
 
               // Tombol Lupa Password
               TextButton(
-                onPressed: () {},
+                onPressed: () {
+                  // Aksi Lupa Password
+                },
                 child: const Text(
                   'Lupa Password?',
                   style: TextStyle(
-                    color: AppColors.primaryBlue,
+                    color: Color(0xFF2C7DEB),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
+
+              const SizedBox(height: 20),
+
+              // Opsi Opsi Jika Belum Punya Akun (Daftar)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    'Belum punya akun? ',
+                    style: TextStyle(color: Colors.black54, fontSize: 14),
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const RegisterScreen(),
+                        ),
+                      );
+                    },
+                    child: const Text(
+                      'Daftar Sekarang',
+                      style: TextStyle(
+                        color: Color(0xFF2C7DEB),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 30),
             ],
           ),
         ),
