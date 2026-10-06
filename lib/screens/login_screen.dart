@@ -37,7 +37,7 @@ class _LoginScreenState extends State<LoginScreen> {
               height: 170,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFFE8F1FF).withOpacity(0.8),
+                color: const Color(0xFFE8F1FF).withValues(alpha: 0.8),
               ),
             ),
           ),
@@ -51,7 +51,7 @@ class _LoginScreenState extends State<LoginScreen> {
               height: 180,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFFE3EEFF).withOpacity(0.5),
+                color: const Color(0xFFE3EEFF).withValues(alpha: 0.5),
               ),
             ),
           ),
@@ -65,12 +65,12 @@ class _LoginScreenState extends State<LoginScreen> {
               height: 110,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFFD4E5FF).withOpacity(0.6),
+                color: const Color(0xFFD4E5FF).withValues(alpha: 0.6),
               ),
             ),
           ),
 
-          // Gelombang Bawah Lapis 1 (Kontras Lebih Jelas)
+          // Gelombang Bawah Lapis 1 (Kontras Latar)
           Positioned(
             bottom: 0,
             left: 0,
@@ -79,7 +79,7 @@ class _LoginScreenState extends State<LoginScreen> {
               clipper: BottomWaveClipperBack(),
               child: Container(
                 height: 170,
-                color: const Color(0xFFB8D5FF).withOpacity(0.7),
+                color: const Color(0xFFB8D5FF).withValues(alpha: 0.7),
               ),
             ),
           ),
@@ -93,45 +93,7 @@ class _LoginScreenState extends State<LoginScreen> {
               clipper: BottomWaveClipperFront(),
               child: Container(
                 height: 135,
-                color: const Color(0xFFEBF3FF).withOpacity(0.95),
-              ),
-            ),
-          ),
-
-          // Rangkaian Ornamen Daun (3 Daun) di Atas Gelombang Bawah
-          Positioned(
-            bottom: 22,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Transform.rotate(
-                    angle: -0.3,
-                    child: Icon(
-                      Icons.eco,
-                      size: 20,
-                      color: const Color(0xFF629BF2).withOpacity(0.75),
-                    ),
-                  ),
-                  const SizedBox(width: 2),
-                  Icon(
-                    Icons.park_rounded,
-                    size: 28,
-                    color: const Color(0xFF2C7DEB).withOpacity(0.85),
-                  ),
-                  const SizedBox(width: 2),
-                  Transform.rotate(
-                    angle: 0.3,
-                    child: Icon(
-                      Icons.eco,
-                      size: 22,
-                      color: const Color(0xFF629BF2).withOpacity(0.75),
-                    ),
-                  ),
-                ],
+                color: const Color(0xFFEBF3FF).withValues(alpha: 0.95),
               ),
             ),
           ),
@@ -281,7 +243,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF2C7DEB).withOpacity(0.3),
+                          color: const Color(0xFF2C7DEB).withValues(alpha: 0.3),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
