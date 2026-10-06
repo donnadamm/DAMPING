@@ -27,44 +27,111 @@ class _LoginScreenState extends State<LoginScreen> {
       body: Stack(
         children: [
           // 1. ELEMEN HIASAN BACKGROUND
-          // Hiasan Lingkaran Pojok Kiri Atas
+
+          // Lingkaran Kiri Atas
           Positioned(
-            top: -40,
-            left: -40,
+            top: -50,
+            left: -50,
             child: Container(
-              width: 160,
-              height: 160,
+              width: 170,
+              height: 170,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFFE8F1FF).withOpacity(0.7),
+                color: const Color(0xFFE8F1FF).withOpacity(0.8),
               ),
             ),
           ),
 
-          // Hiasan Gelombang Bawah
+          // Lingkaran Bulat Kanan Tengah (Lapisan Luar)
+          Positioned(
+            top: MediaQuery.of(context).size.height * 0.38,
+            right: -60,
+            child: Container(
+              width: 180,
+              height: 180,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFFE3EEFF).withOpacity(0.5),
+              ),
+            ),
+          ),
+
+          // Lingkaran Bulat Kanan Tengah (Lapisan Dalam)
+          Positioned(
+            top: MediaQuery.of(context).size.height * 0.42,
+            right: -30,
+            child: Container(
+              width: 110,
+              height: 110,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFFD4E5FF).withOpacity(0.6),
+              ),
+            ),
+          ),
+
+          // Gelombang Bawah Lapis 1 (Kontras Lebih Jelas)
           Positioned(
             bottom: 0,
             left: 0,
             right: 0,
             child: ClipPath(
-              clipper: BottomWaveClipper(),
+              clipper: BottomWaveClipperBack(),
               child: Container(
-                height: 140,
-                color: const Color(0xFFE3EEFF).withOpacity(0.6),
+                height: 170,
+                color: const Color(0xFFB8D5FF).withOpacity(0.7),
               ),
             ),
           ),
 
-          // Hiasan Ikon Daun / Aksen di Tengah Bawah
+          // Gelombang Bawah Lapis 2 (Depan)
           Positioned(
-            bottom: 25,
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: ClipPath(
+              clipper: BottomWaveClipperFront(),
+              child: Container(
+                height: 135,
+                color: const Color(0xFFEBF3FF).withOpacity(0.95),
+              ),
+            ),
+          ),
+
+          // Rangkaian Ornamen Daun (3 Daun) di Atas Gelombang Bawah
+          Positioned(
+            bottom: 22,
             left: 0,
             right: 0,
             child: Center(
-              child: Icon(
-                Icons.eco_rounded,
-                size: 28,
-                color: const Color(0xFF8BB7F5).withOpacity(0.8),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Transform.rotate(
+                    angle: -0.3,
+                    child: Icon(
+                      Icons.eco,
+                      size: 20,
+                      color: const Color(0xFF629BF2).withOpacity(0.75),
+                    ),
+                  ),
+                  const SizedBox(width: 2),
+                  Icon(
+                    Icons.park_rounded,
+                    size: 28,
+                    color: const Color(0xFF2C7DEB).withOpacity(0.85),
+                  ),
+                  const SizedBox(width: 2),
+                  Transform.rotate(
+                    angle: 0.3,
+                    child: Icon(
+                      Icons.eco,
+                      size: 22,
+                      color: const Color(0xFF629BF2).withOpacity(0.75),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -203,7 +270,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   const SizedBox(height: 24),
 
-                  // Tombol Masuk Gradasi
+                  // Tombol Masuk
                   Container(
                     width: double.infinity,
                     height: 50,
@@ -256,7 +323,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   const SizedBox(height: 12),
 
-                  // Link Daftar Akun
+                  // Link Daftar
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -296,17 +363,45 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-// Custom Clipper untuk Membuat Latar Gelombang Bawah
-class BottomWaveClipper extends CustomClipper<Path> {
+// Clipper Gelombang Lapis Belakang
+class BottomWaveClipperBack extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
     var path = Path();
-    path.lineTo(0, size.height * 0.4);
+    path.lineTo(0, size.height * 0.15);
+
+    var firstControlPoint = Offset(size.width * 0.35, size.height * 0.65);
+    var firstEndPoint = Offset(size.width * 0.7, size.height * 0.25);
+
+    var secondControlPoint = Offset(size.width * 0.88, size.height * 0.05);
+    var secondEndPoint = Offset(size.width, size.height * 0.35);
+
+    path.quadraticBezierTo(firstControlPoint.dx, firstControlPoint.dy,
+        firstEndPoint.dx, firstEndPoint.dy);
+    path.quadraticBezierTo(secondControlPoint.dx, secondControlPoint.dy,
+        secondEndPoint.dx, secondEndPoint.dy);
+
+    path.lineTo(size.width, size.height);
+    path.lineTo(0, size.height);
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
+}
+
+// Clipper Gelombang Lapis Depan
+class BottomWaveClipperFront extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    var path = Path();
+    path.lineTo(0, size.height * 0.55);
 
     var firstControlPoint = Offset(size.width * 0.3, size.height * 0.1);
-    var firstEndPoint = Offset(size.width * 0.6, size.height * 0.35);
+    var firstEndPoint = Offset(size.width * 0.62, size.height * 0.45);
 
-    var secondControlPoint = Offset(size.width * 0.85, size.height * 0.55);
+    var secondControlPoint = Offset(size.width * 0.85, size.height * 0.7);
     var secondEndPoint = Offset(size.width, size.height * 0.3);
 
     path.quadraticBezierTo(firstControlPoint.dx, firstControlPoint.dy,
