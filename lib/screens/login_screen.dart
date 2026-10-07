@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'register_screen.dart';
-import '../data/dummy_data.dart';
+import 'package:damping_app/data/dummy_data.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});

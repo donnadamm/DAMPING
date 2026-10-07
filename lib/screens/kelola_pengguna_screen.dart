@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../data/dummy_data.dart';
+import 'package:damping_app/data/dummy_data.dart';
 import 'tambah_pengguna_screen.dart';
 
 class KelolaPenggunaScreen extends StatefulWidget {
@@ -12,21 +12,17 @@ class KelolaPenggunaScreen extends StatefulWidget {
 class _KelolaPenggunaScreenState extends State<KelolaPenggunaScreen> {
   String _selectedFilter = 'Semua';
 
-  // Menggabungkan seluruh data untuk ditampilkan
+  // Menggabungkan seluruh data secara dinamis langsung dari DummyData
   List<Map<String, dynamic>> get _listPengguna {
     if (_selectedFilter == 'Guru') return DummyData.guru;
     if (_selectedFilter == 'Orang Tua') return DummyData.orangTua;
-    if (_selectedFilter == 'Admin') {
-      return const [
-        {'nama': 'Dona Damayanti', 'hp': '081273487877', 'role': 'Admin'}
-      ];
-    }
+    if (_selectedFilter == 'Admin') return DummyData.admin;
 
-    // Jika 'Semua', gabungkan semua data
+    // Jika 'Semua', gabungkan semua data dari DummyData (termasuk akun hasil Register)
     return [
+      ...DummyData.admin,
       ...DummyData.guru,
       ...DummyData.orangTua,
-      {'nama': 'Dona Damayanti', 'hp': '081273487877', 'role': 'Admin'}
     ];
   }
 
