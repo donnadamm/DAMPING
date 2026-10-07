@@ -339,23 +339,41 @@ class _RegisterParentScreenState extends State<RegisterParentScreen> {
   final _namaController = TextEditingController();
   final _hpController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _nisController =
+      TextEditingController(); // Tambahan controller untuk NIS/Anak
+  final _hubunganController =
+      TextEditingController(); // Tambahan controller untuk hubungan
+
+  @override
+  void dispose() {
+    _namaController.dispose();
+    _hpController.dispose();
+    _passwordController.dispose();
+    _nisController.dispose();
+    _hubunganController.dispose();
+    super.dispose();
+  }
 
   void _daftarOrangTua() {
     if (_namaController.text.isEmpty ||
         _hpController.text.isEmpty ||
         _passwordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Data wajib diisi semua!'),
-          backgroundColor: Colors.redAccent));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Data wajib diisi semua!'),
+            backgroundColor: Colors.redAccent),
+      );
       return;
     }
 
-    // SIMPAN DATA KE DUMMY DATABASE
+    // SIMPAN DATA KE DUMMY DATABASE ORANG TUA
     DummyData.orangTua.add({
       'nama': _namaController.text.trim(),
       'hp': _hpController.text.trim(),
       'password': _passwordController.text.trim(),
       'role': 'Orang Tua',
+      'nis': _nisController.text.trim(),
+      'hubungan': _hubunganController.text.trim(),
     });
 
     _showSuccessDialog(
@@ -402,6 +420,7 @@ class _RegisterParentScreenState extends State<RegisterParentScreen> {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildTextField(
                 controller: _namaController,
@@ -419,6 +438,27 @@ class _RegisterParentScreenState extends State<RegisterParentScreen> {
                 icon: Icons.lock_outline,
                 hint: 'Password',
                 isPassword: true),
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24.0),
+              child: Divider(),
+            ),
+            const Text('Data Anak (Siswa)',
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF0C356A))),
+            const SizedBox(height: 16),
+            _buildTextField(
+                controller: _nisController,
+                icon: Icons.qr_code_outlined,
+                hint: 'NIS / Kode Siswa'), // Menghubungkan controller NIS
+            const SizedBox(height: 16),
+            _buildTextField(
+                controller: _hubunganController,
+                icon: Icons.family_restroom,
+                hint:
+                    'Hubungan (Contoh: Ayah / Ibu / Wali)'), // Menghubungkan controller Hubungan
+
             const SizedBox(height: 32),
             SizedBox(
               width: double.infinity,
