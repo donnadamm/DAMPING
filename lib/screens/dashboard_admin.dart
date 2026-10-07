@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../data/dummy_data.dart';
+import 'kelola_pengguna_screen.dart';
 
 class DashboardAdminScreen extends StatefulWidget {
   const DashboardAdminScreen({super.key});
@@ -190,8 +191,20 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
               child: Row(
                 children: [
                   Expanded(
+                    child: GestureDetector(
+                      onTap: () async {
+                        // Pergi ke Kelola Pengguna, dan jika kembali, refresh Dashboard agar angkanya berubah
+                        await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) =>
+                                    const KelolaPenggunaScreen()));
+                        setState(() {});
+                      },
                       child: _buildQuickAccessBtn(
-                          Icons.manage_accounts_outlined, 'Kelola Pengguna')),
+                          Icons.manage_accounts_outlined, 'Kelola Pengguna'),
+                    ),
+                  ),
                   const SizedBox(width: 16),
                   Expanded(
                       child: _buildQuickAccessBtn(
