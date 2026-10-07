@@ -212,6 +212,69 @@ class RegisterTypeScreen extends StatelessWidget {
 class RegisterGuruScreen extends StatelessWidget {
   const RegisterGuruScreen({super.key});
 
+  // Fungsi untuk menampilkan pop-up sukses dan kembali ke Login
+  void _showSuccessDialog(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false, // Tidak bisa ditutup dengan mengetuk luar area
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          contentPadding: const EdgeInsets.all(24),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.green.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.check_circle_rounded,
+                    color: Colors.green, size: 60),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Pendaftaran Berhasil!',
+                style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF0C356A)),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.black54, fontSize: 14),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                height: 45,
+                child: ElevatedButton(
+                  onPressed: () {
+                    // Kembali ke Halaman Login dan hapus semua riwayat halaman sebelumnya
+                    Navigator.of(context)
+                        .pushNamedAndRemoveUntil('/login', (route) => false);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2C7DEB),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20)),
+                  ),
+                  child: const Text('Kembali ke Login',
+                      style: TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -256,7 +319,9 @@ class RegisterGuruScreen extends StatelessWidget {
               height: 50,
               child: ElevatedButton(
                 onPressed: () {
-                  // Aksi Daftar Guru
+                  // Simulasi proses validasi dan akun dibuat
+                  _showSuccessDialog(context,
+                      'Akun Guru Anda berhasil dibuat. Silakan login untuk melanjutkan.');
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF2C7DEB),
@@ -282,6 +347,69 @@ class RegisterGuruScreen extends StatelessWidget {
 // ==========================================
 class RegisterParentScreen extends StatelessWidget {
   const RegisterParentScreen({super.key});
+
+  // Fungsi untuk menampilkan pop-up sukses
+  void _showSuccessDialog(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          contentPadding: const EdgeInsets.all(24),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.green.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.verified_user_rounded,
+                    color: Colors.green, size: 60),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Data Valid!',
+                style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF0C356A)),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.black54, fontSize: 14),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                height: 45,
+                child: ElevatedButton(
+                  onPressed: () {
+                    // Kembali ke Login
+                    Navigator.of(context)
+                        .pushNamedAndRemoveUntil('/login', (route) => false);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2C7DEB),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20)),
+                  ),
+                  child: const Text('Selesai & Login',
+                      style: TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -338,7 +466,9 @@ class RegisterParentScreen extends StatelessWidget {
               height: 50,
               child: ElevatedButton(
                 onPressed: () {
-                  // Aksi Daftar Orang Tua
+                  // Simulasi Validasi Anak dan akun berhasil dihubungkan
+                  _showSuccessDialog(context,
+                      'Akun berhasil dibuat dan dihubungkan dengan data siswa.');
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF2C7DEB),
@@ -359,6 +489,9 @@ class RegisterParentScreen extends StatelessWidget {
   }
 }
 
+// ==========================================
+// WIDGET BANTUAN UNTUK TEXTFIELD
+// ==========================================
 Widget _buildTextField(
     {required IconData icon,
     required String hint,
