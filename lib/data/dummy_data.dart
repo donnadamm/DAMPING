@@ -1,26 +1,53 @@
 class DummyData {
-  // Data Guru (Awalnya kita buat 2 guru)
+  // Data Admin
+  static List<Map<String, dynamic>> admin = [
+    {
+      'nama': 'Dona Damayanti',
+      'hp': '081273487877',
+      'password': 'admin',
+      'role': 'Admin'
+    },
+  ];
+
+  // Data Guru
   static List<Map<String, dynamic>> guru = [
     {
       'nama': 'Bu Dona',
       'hp': '081234567890',
+      'password': '123',
       'role': 'Guru - Wali Kelas X RPL 1'
     },
     {
       'nama': 'Pak Budi',
       'hp': '081298765432',
+      'password': '123',
       'role': 'Guru - Wali Kelas X RPL 2'
     },
   ];
 
-  // Data Orang Tua (Awalnya 3 orang tua)
+  // Data Orang Tua
   static List<Map<String, dynamic>> orangTua = [
-    {'nama': 'Siti Aminah', 'hp': '081311112222', 'role': 'Orang Tua'},
-    {'nama': 'Ahmad Fauzi', 'hp': '081533334444', 'role': 'Orang Tua'},
-    {'nama': 'Rokayah', 'hp': '081199998888', 'role': 'Orang Tua'},
+    {
+      'nama': 'Siti Aminah',
+      'hp': '081311112222',
+      'password': '123',
+      'role': 'Orang Tua'
+    },
+    {
+      'nama': 'Ahmad Fauzi',
+      'hp': '081533334444',
+      'password': '123',
+      'role': 'Orang Tua'
+    },
+    {
+      'nama': 'Rokayah',
+      'hp': '081199998888',
+      'password': '123',
+      'role': 'Orang Tua'
+    },
   ];
 
-  // Data Siswa (Awalnya 4 siswa)
+  // Data Siswa
   static List<Map<String, dynamic>> siswa = [
     {'nama': 'Andi Pratama', 'kelas': 'X RPL 1'},
     {'nama': 'Citra Lestari', 'kelas': 'X RPL 1'},
@@ -28,7 +55,7 @@ class DummyData {
     {'nama': 'Deni Kurniawan', 'kelas': 'X RPL 2'},
   ];
 
-  // Data Pelanggaran (Awalnya 3 pelanggaran)
+  // Data Pelanggaran
   static List<Map<String, dynamic>> pelanggaran = [
     {
       'nama': 'Andi Pratama',

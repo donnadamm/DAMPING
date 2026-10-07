@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:damping_app/data/dummy_data.dart';
 
 // ==========================================
 // 1. HALAMAN PILIH JENIS AKUN
@@ -209,146 +210,40 @@ class RegisterTypeScreen extends StatelessWidget {
 // ==========================================
 // 2. HALAMAN REGISTRASI GURU
 // ==========================================
-class RegisterGuruScreen extends StatelessWidget {
+class RegisterGuruScreen extends StatefulWidget {
   const RegisterGuruScreen({super.key});
 
-  // Fungsi untuk menampilkan pop-up sukses dan kembali ke Login
-  void _showSuccessDialog(BuildContext context, String message) {
-    showDialog(
-      context: context,
-      barrierDismissible: false, // Tidak bisa ditutup dengan mengetuk luar area
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          contentPadding: const EdgeInsets.all(24),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.green.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.check_circle_rounded,
-                    color: Colors.green, size: 60),
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                'Pendaftaran Berhasil!',
-                style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF0C356A)),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                message,
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.black54, fontSize: 14),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 45,
-                child: ElevatedButton(
-                  onPressed: () {
-                    // Kembali ke Halaman Login dan hapus semua riwayat halaman sebelumnya
-                    Navigator.of(context)
-                        .pushNamedAndRemoveUntil('/login', (route) => false);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2C7DEB),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20)),
-                  ),
-                  child: const Text('Kembali ke Login',
-                      style: TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.bold)),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text('Daftar Akun Guru'),
-        backgroundColor: const Color(0xFF2C7DEB),
-        foregroundColor: Colors.white,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Lengkapi Data Guru',
-                style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF0C356A))),
-            const SizedBox(height: 6),
-            const Text(
-                'Pastikan data yang dimasukkan sesuai dengan identitas Anda.',
-                style: TextStyle(color: Colors.black54, fontSize: 13)),
-            const SizedBox(height: 24),
-            _buildTextField(icon: Icons.person_outline, hint: 'Nama Lengkap'),
-            const SizedBox(height: 16),
-            _buildTextField(
-                icon: Icons.phone_outlined,
-                hint: 'Nomor HP',
-                keyboardType: TextInputType.phone),
-            const SizedBox(height: 16),
-            _buildTextField(icon: Icons.badge_outlined, hint: 'NIP / NIK'),
-            const SizedBox(height: 16),
-            _buildTextField(
-                icon: Icons.account_balance_outlined, hint: 'Kode Sekolah'),
-            const SizedBox(height: 16),
-            _buildTextField(
-                icon: Icons.lock_outline, hint: 'Password', isPassword: true),
-            const SizedBox(height: 32),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: () {
-                  // Simulasi proses validasi dan akun dibuat
-                  _showSuccessDialog(context,
-                      'Akun Guru Anda berhasil dibuat. Silakan login untuk melanjutkan.');
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2C7DEB),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25)),
-                ),
-                child: const Text('Daftar Sekarang',
-                    style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white)),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  State<RegisterGuruScreen> createState() => _RegisterGuruScreenState();
 }
 
-// ==========================================
-// 3. HALAMAN REGISTRASI ORANG TUA
-// ==========================================
-class RegisterParentScreen extends StatelessWidget {
-  const RegisterParentScreen({super.key});
+class _RegisterGuruScreenState extends State<RegisterGuruScreen> {
+  final _namaController = TextEditingController();
+  final _hpController = TextEditingController();
+  final _passwordController = TextEditingController();
 
-  // Fungsi untuk menampilkan pop-up sukses
+  void _daftarGuru() {
+    if (_namaController.text.isEmpty ||
+        _hpController.text.isEmpty ||
+        _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Data wajib diisi semua!'),
+          backgroundColor: Colors.redAccent));
+      return;
+    }
+
+    // SIMPAN DATA KE DUMMY DATABASE
+    DummyData.guru.add({
+      'nama': _namaController.text.trim(),
+      'hp': _hpController.text.trim(),
+      'password': _passwordController.text.trim(),
+      'role': 'Guru',
+    });
+
+    _showSuccessDialog(context,
+        'Akun Guru Anda berhasil dibuat. Silakan login untuk melanjutkan.');
+  }
+
   void _showSuccessDialog(BuildContext context, String message) {
     showDialog(
       context: context,
@@ -361,48 +256,23 @@ class RegisterParentScreen extends StatelessWidget {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.green.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.verified_user_rounded,
-                    color: Colors.green, size: 60),
-              ),
+              const Icon(Icons.check_circle_rounded,
+                  color: Colors.green, size: 60),
               const SizedBox(height: 20),
-              const Text(
-                'Data Valid!',
-                style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF0C356A)),
-              ),
+              const Text('Pendaftaran Berhasil!',
+                  style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF0C356A))),
               const SizedBox(height: 12),
-              Text(
-                message,
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.black54, fontSize: 14),
-              ),
+              Text(message,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.black54, fontSize: 14)),
               const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 45,
-                child: ElevatedButton(
-                  onPressed: () {
-                    // Kembali ke Login
-                    Navigator.of(context)
-                        .pushNamedAndRemoveUntil('/login', (route) => false);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2C7DEB),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20)),
-                  ),
-                  child: const Text('Selesai & Login',
-                      style: TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.bold)),
-                ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context)
+                    .pushNamedAndRemoveUntil('/login', (route) => false),
+                child: const Text('Kembali ke Login'),
               ),
             ],
           ),
@@ -415,71 +285,150 @@ class RegisterParentScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text('Daftar Akun Orang Tua'),
-        backgroundColor: const Color(0xFF2C7DEB),
-        foregroundColor: Colors.white,
-      ),
+      appBar: AppBar(title: const Text('Daftar Akun Guru')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Lengkapi Data Orang Tua',
-                style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF0C356A))),
-            const SizedBox(height: 6),
-            const Text('Hubungkan akun Anda dengan data anak (siswa) Anda.',
-                style: TextStyle(color: Colors.black54, fontSize: 13)),
-            const SizedBox(height: 24),
             _buildTextField(
-                icon: Icons.person_outline, hint: 'Nama Lengkap Anda'),
+                controller: _namaController,
+                icon: Icons.person_outline,
+                hint: 'Nama Lengkap'),
             const SizedBox(height: 16),
             _buildTextField(
+                controller: _hpController,
                 icon: Icons.phone_outlined,
                 hint: 'Nomor HP',
                 keyboardType: TextInputType.phone),
             const SizedBox(height: 16),
             _buildTextField(
-                icon: Icons.lock_outline, hint: 'Password', isPassword: true),
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 24.0),
-              child: Divider(),
-            ),
-            const Text('Data Anak (Siswa)',
-                style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF0C356A))),
-            const SizedBox(height: 16),
-            _buildTextField(
-                icon: Icons.qr_code_outlined, hint: 'NIS / Kode Siswa'),
-            const SizedBox(height: 16),
-            _buildTextField(
-                icon: Icons.family_restroom,
-                hint: 'Hubungan (Contoh: Ayah / Ibu / Wali)'),
+                controller: _passwordController,
+                icon: Icons.lock_outline,
+                hint: 'Password',
+                isPassword: true),
             const SizedBox(height: 32),
             SizedBox(
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                onPressed: () {
-                  // Simulasi Validasi Anak dan akun berhasil dihubungkan
-                  _showSuccessDialog(context,
-                      'Akun berhasil dibuat dan dihubungkan dengan data siswa.');
-                },
+                onPressed: _daftarGuru,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2C7DEB),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25)),
-                ),
+                    backgroundColor: const Color(0xFF2C7DEB)),
+                child: const Text('Daftar Sekarang',
+                    style: TextStyle(color: Colors.white)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ==========================================
+// 3. HALAMAN REGISTRASI ORANG TUA
+// ==========================================
+class RegisterParentScreen extends StatefulWidget {
+  const RegisterParentScreen({super.key});
+
+  @override
+  State<RegisterParentScreen> createState() => _RegisterParentScreenState();
+}
+
+class _RegisterParentScreenState extends State<RegisterParentScreen> {
+  final _namaController = TextEditingController();
+  final _hpController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  void _daftarOrangTua() {
+    if (_namaController.text.isEmpty ||
+        _hpController.text.isEmpty ||
+        _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Data wajib diisi semua!'),
+          backgroundColor: Colors.redAccent));
+      return;
+    }
+
+    // SIMPAN DATA KE DUMMY DATABASE
+    DummyData.orangTua.add({
+      'nama': _namaController.text.trim(),
+      'hp': _hpController.text.trim(),
+      'password': _passwordController.text.trim(),
+      'role': 'Orang Tua',
+    });
+
+    _showSuccessDialog(
+        context, 'Akun berhasil dibuat dan dihubungkan dengan data siswa.');
+  }
+
+  void _showSuccessDialog(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          contentPadding: const EdgeInsets.all(24),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.verified_user_rounded,
+                  color: Colors.green, size: 60),
+              const SizedBox(height: 20),
+              const Text('Data Valid!',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
+              Text(message, textAlign: TextAlign.center),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context)
+                    .pushNamedAndRemoveUntil('/login', (route) => false),
+                child: const Text('Selesai & Login'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(title: const Text('Daftar Akun Orang Tua')),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          children: [
+            _buildTextField(
+                controller: _namaController,
+                icon: Icons.person_outline,
+                hint: 'Nama Lengkap Anda'),
+            const SizedBox(height: 16),
+            _buildTextField(
+                controller: _hpController,
+                icon: Icons.phone_outlined,
+                hint: 'Nomor HP',
+                keyboardType: TextInputType.phone),
+            const SizedBox(height: 16),
+            _buildTextField(
+                controller: _passwordController,
+                icon: Icons.lock_outline,
+                hint: 'Password',
+                isPassword: true),
+            const SizedBox(height: 32),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                onPressed: _daftarOrangTua,
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2C7DEB)),
                 child: const Text('Daftar & Hubungkan Siswa',
-                    style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white)),
+                    style: TextStyle(color: Colors.white)),
               ),
             ),
           ],
@@ -493,28 +442,22 @@ class RegisterParentScreen extends StatelessWidget {
 // WIDGET BANTUAN UNTUK TEXTFIELD
 // ==========================================
 Widget _buildTextField(
-    {required IconData icon,
+    {required TextEditingController controller,
+    required IconData icon,
     required String hint,
     TextInputType keyboardType = TextInputType.text,
     bool isPassword = false}) {
   return TextField(
+    controller: controller,
     keyboardType: keyboardType,
     obscureText: isPassword,
     decoration: InputDecoration(
       hintText: hint,
-      hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13.5),
       prefixIcon: Icon(icon, color: const Color(0xFF2C7DEB)),
       filled: true,
       fillColor: const Color(0xFFF8FAFC),
-      contentPadding: const EdgeInsets.symmetric(vertical: 16),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: Colors.grey.shade300),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Color(0xFF2C7DEB), width: 1.5),
-      ),
+      border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
     ),
   );
 }

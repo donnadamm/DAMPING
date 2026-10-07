@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'register_screen.dart';
+import '../data/dummy_data.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -25,22 +26,55 @@ class _LoginScreenState extends State<LoginScreen> {
     String password = _passwordController.text.trim();
 
     if (phone.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('Nomor HP dan Password wajib diisi!'),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
+          backgroundColor: Colors.redAccent));
       return;
     }
 
-    // Simulasi Cek Role berdasarkan input nomor HP (untuk testing)
-    if (phone == "081273487877") {
-      _navigateToDashboard('/dashboard_admin', 'Admin');
-    } else if (phone == "08222222222") {
-      _navigateToDashboard('/dashboard_guru', 'Guru');
+    bool isFound = false;
+    String targetRoute = '';
+    String roleName = '';
+
+    // 1. Cek di Data Admin
+    for (var user in DummyData.admin) {
+      if (user['hp'] == phone && user['password'] == password) {
+        isFound = true;
+        targetRoute = '/dashboard_admin';
+        roleName = 'Admin';
+        break;
+      }
+    }
+    // 2. Cek di Data Guru
+    if (!isFound) {
+      for (var user in DummyData.guru) {
+        if (user['hp'] == phone && user['password'] == password) {
+          isFound = true;
+          targetRoute = '/dashboard_guru';
+          roleName = 'Guru';
+          break;
+        }
+      }
+    }
+    // 3. Cek di Data Orang Tua
+    if (!isFound) {
+      for (var user in DummyData.orangTua) {
+        if (user['hp'] == phone && user['password'] == password) {
+          isFound = true;
+          targetRoute = '/dashboard_parent';
+          roleName = 'Orang Tua';
+          break;
+        }
+      }
+    }
+
+    // Eksekusi Login
+    if (isFound) {
+      _navigateToDashboard(targetRoute, roleName);
     } else {
-      _navigateToDashboard('/dashboard_parent', 'Orang Tua');
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Nomor HP atau Password salah / belum terdaftar!'),
+          backgroundColor: Colors.redAccent));
     }
   }
 
