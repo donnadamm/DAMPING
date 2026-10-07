@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../data/dummy_data.dart';
+import 'package:damping_app/data/dummy_data.dart';
 import 'kelola_pengguna_screen.dart';
 
 class DashboardAdminScreen extends StatefulWidget {
