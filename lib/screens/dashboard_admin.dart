@@ -199,11 +199,13 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
       // 5. BOTTOM NAVIGATION BAR
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
+          color: Colors.white,
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 10,
-                offset: const Offset(0, -5)),
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, -5),
+            ),
           ],
         ),
         child: BottomNavigationBar(
@@ -213,19 +215,27 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
               _selectedIndex = index;
             });
           },
-          type: BottomNavigationBarType.fixed,
+          type: BottomNavigationBarType
+              .fixed, // Wajib 'fixed' agar label 5 menu tetap terlihat
           selectedItemColor: const Color(0xFF2C7DEB),
-          unselectedItemColor: Colors.grey,
+          unselectedItemColor: Colors.grey.shade400,
           showUnselectedLabels: true,
-          selectedFontSize: 12,
-          unselectedFontSize: 12,
+          selectedFontSize:
+              11, // Diperkecil sedikit agar 5 menu tidak berdesakan
+          unselectedFontSize: 11,
           items: const [
             BottomNavigationBarItem(
                 icon: Icon(Icons.home_filled), label: 'Beranda'),
             BottomNavigationBarItem(
-                icon: Icon(Icons.folder_copy_outlined), label: 'Kelola'),
+                icon: Icon(Icons
+                    .rule_folder_outlined), // Sesuai ikon pelanggaran/aturan
+                label: 'Pelanggaran'),
             BottomNavigationBarItem(
-                icon: Icon(Icons.rule_folder_outlined), label: 'Aturan'),
+                icon: Icon(
+                    Icons.pie_chart_outline), // Sesuai ikon rekap/statistik
+                label: 'Rekap'),
+            BottomNavigationBarItem(
+                icon: Icon(Icons.settings_outlined), label: 'Pengaturan'),
             BottomNavigationBarItem(
                 icon: Icon(Icons.person_outline), label: 'Profil'),
           ],
