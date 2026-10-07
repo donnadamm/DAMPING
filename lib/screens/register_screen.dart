@@ -105,16 +105,16 @@ class RegisterTypeScreen extends StatelessWidget {
                       child: Row(
                         children: [
                           Container(
-                            padding: EdgeInsets.all(12),
-                            decoration: BoxDecoration(
+                            padding: const EdgeInsets.all(12),
+                            decoration: const BoxDecoration(
                               color: Color(0xFFE8F1FF),
                               shape: BoxShape.circle,
                             ),
-                            child: Icon(Icons.family_restroom,
+                            child: const Icon(Icons.family_restroom,
                                 color: Color(0xFF2C7DEB), size: 28),
                           ),
-                          SizedBox(width: 16),
-                          Expanded(
+                          const SizedBox(width: 16),
+                          const Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -130,7 +130,7 @@ class RegisterTypeScreen extends StatelessWidget {
                               ],
                             ),
                           ),
-                          Icon(Icons.arrow_forward_ios_rounded,
+                          const Icon(Icons.arrow_forward_ios_rounded,
                               color: Color(0xFF2C7DEB), size: 16),
                         ],
                       ),

@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'core/theme/app_theme.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
+import 'screens/dashboard_admin.dart'; 
+import 'screens/dashboard_guru.dart'; 
+import 'screens/dashboard_parent.dart';
 
 void main() {
   runApp(const DampingApp());
@@ -17,14 +20,16 @@ class DampingApp extends StatelessWidget {
       title: 'DAMPING',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-
-      // Menggunakan sistem routes sebagai pengganti 'home:'
-      initialRoute: '/splash', // Halaman pertama kali dibuka
+      initialRoute: '/splash',
       routes: {
         '/splash': (context) => const SplashScreen(),
         '/login': (context) => const LoginScreen(),
-        // Nanti kamu bisa tambahkan rute dashboard di sini
-        // '/dashboard_guru': (context) => const DashboardGuruScreen(),
+        '/dashboard_admin': (context) =>
+            const DashboardAdminScreen(), // Rute Admin
+        '/dashboard_guru': (context) =>
+            const DashboardGuruScreen(), // Rute Guru
+        '/dashboard_parent': (context) =>
+            const DashboardParentScreen(), // Rute Orang Tua
       },
     );
   }

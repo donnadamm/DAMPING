@@ -20,7 +20,6 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  // fungsi Simulasi Validasi Login sesuai Diagram Alur
   void _handleLogin() {
     String phone = _phoneController.text.trim();
     String password = _passwordController.text.trim();
@@ -36,23 +35,24 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     // Simulasi Cek Role berdasarkan input nomor HP (untuk testing)
-    if (phone == "08111111111") {
-      _navigateToDashboard('Admin');
+    if (phone == "081273487877") {
+      _navigateToDashboard('/dashboard_admin', 'Admin');
     } else if (phone == "08222222222") {
-      _navigateToDashboard('Guru');
+      _navigateToDashboard('/dashboard_guru', 'Guru');
     } else {
-      _navigateToDashboard('Orang Tua');
+      _navigateToDashboard('/dashboard_parent', 'Orang Tua');
     }
   }
 
-  void _navigateToDashboard(String role) {
+  void _navigateToDashboard(String route, String role) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Login Berhasil sebagai $role'),
         backgroundColor: Colors.green,
       ),
     );
-    // Nanti di sini ditambahkan navigasi ke Dashboard Admin / Guru / Orang Tua
+
+    Navigator.pushReplacementNamed(context, route);
   }
 
   @override
