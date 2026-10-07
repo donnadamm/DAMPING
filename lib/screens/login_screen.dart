@@ -20,6 +20,41 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  // fungsi Simulasi Validasi Login sesuai Diagram Alur
+  void _handleLogin() {
+    String phone = _phoneController.text.trim();
+    String password = _passwordController.text.trim();
+
+    if (phone.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Nomor HP dan Password wajib diisi!'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
+    // Simulasi Cek Role berdasarkan input nomor HP (untuk testing)
+    if (phone == "08111111111") {
+      _navigateToDashboard('Admin');
+    } else if (phone == "08222222222") {
+      _navigateToDashboard('Guru');
+    } else {
+      _navigateToDashboard('Orang Tua');
+    }
+  }
+
+  void _navigateToDashboard(String role) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Login Berhasil sebagai $role'),
+        backgroundColor: Colors.green,
+      ),
+    );
+    // Nanti di sini ditambahkan navigasi ke Dashboard Admin / Guru / Orang Tua
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -27,8 +62,6 @@ class _LoginScreenState extends State<LoginScreen> {
       body: Stack(
         children: [
           // 1. ELEMEN HIASAN BACKGROUND
-
-          // Lingkaran Kiri Atas
           Positioned(
             top: -50,
             left: -50,
@@ -41,8 +74,6 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ),
-
-          // Lingkaran Bulat Kanan Tengah (Lapisan Luar)
           Positioned(
             top: MediaQuery.of(context).size.height * 0.38,
             right: -60,
@@ -55,8 +86,6 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ),
-
-          // Lingkaran Bulat Kanan Tengah (Lapisan Dalam)
           Positioned(
             top: MediaQuery.of(context).size.height * 0.42,
             right: -30,
@@ -69,8 +98,6 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ),
-
-          // Gelombang Bawah Lapis 1 (Kontras Latar)
           Positioned(
             bottom: 0,
             left: 0,
@@ -83,8 +110,6 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ),
-
-          // Gelombang Bawah Lapis 2 (Depan)
           Positioned(
             bottom: 0,
             left: 0,
@@ -98,7 +123,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
 
-          // 2. KONTEN UTAMA HALAMAN LOGIN
+          // 2. KONTEN UTAMA
           SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -106,8 +131,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   const SizedBox(height: 20),
-
-                  // Logo DAMPING
                   Image.asset(
                     'assets/android_fg.png',
                     width: 105,
@@ -115,8 +138,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     fit: BoxFit.contain,
                   ),
                   const SizedBox(height: 10),
-
-                  // Judul & Subtitle
                   const Text(
                     'DAMPING',
                     style: TextStyle(
@@ -135,10 +156,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       color: Color(0xFF1E56A0),
                     ),
                   ),
-
                   const SizedBox(height: 36),
-
-                  // Teks Salam
                   const Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
@@ -162,7 +180,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 26),
 
                   // Input Nomor HP
@@ -189,7 +206,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 14),
 
                   // Input Password
@@ -229,7 +245,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 24),
 
                   // Tombol Masuk
@@ -250,7 +265,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ],
                     ),
                     child: ElevatedButton(
-                      onPressed: () {},
+                      onPressed: _handleLogin,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.transparent,
                         shadowColor: Colors.transparent,
@@ -268,10 +283,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 14),
 
-                  // Lupa Password
                   TextButton(
                     onPressed: () {},
                     child: const Text(
@@ -282,10 +295,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 12),
 
-                  // Link Daftar
+                  // Link ke Pemilihan Jenis Akun (Register)
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -298,7 +310,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const RegisterScreen(),
+                              builder: (context) => const RegisterTypeScreen(),
                             ),
                           );
                         },
@@ -313,7 +325,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 60),
                 ],
               ),
@@ -325,16 +336,13 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-// Clipper Gelombang Lapis Belakang
 class BottomWaveClipperBack extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
     var path = Path();
     path.lineTo(0, size.height * 0.15);
-
     var firstControlPoint = Offset(size.width * 0.35, size.height * 0.65);
     var firstEndPoint = Offset(size.width * 0.7, size.height * 0.25);
-
     var secondControlPoint = Offset(size.width * 0.88, size.height * 0.05);
     var secondEndPoint = Offset(size.width, size.height * 0.35);
 
@@ -342,7 +350,6 @@ class BottomWaveClipperBack extends CustomClipper<Path> {
         firstEndPoint.dx, firstEndPoint.dy);
     path.quadraticBezierTo(secondControlPoint.dx, secondControlPoint.dy,
         secondEndPoint.dx, secondEndPoint.dy);
-
     path.lineTo(size.width, size.height);
     path.lineTo(0, size.height);
     path.close();
@@ -353,16 +360,13 @@ class BottomWaveClipperBack extends CustomClipper<Path> {
   bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }
 
-// Clipper Gelombang Lapis Depan
 class BottomWaveClipperFront extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
     var path = Path();
     path.lineTo(0, size.height * 0.55);
-
     var firstControlPoint = Offset(size.width * 0.3, size.height * 0.1);
     var firstEndPoint = Offset(size.width * 0.62, size.height * 0.45);
-
     var secondControlPoint = Offset(size.width * 0.85, size.height * 0.7);
     var secondEndPoint = Offset(size.width, size.height * 0.3);
 
@@ -370,7 +374,6 @@ class BottomWaveClipperFront extends CustomClipper<Path> {
         firstEndPoint.dx, firstEndPoint.dy);
     path.quadraticBezierTo(secondControlPoint.dx, secondControlPoint.dy,
         secondEndPoint.dx, secondEndPoint.dy);
-
     path.lineTo(size.width, size.height);
     path.lineTo(0, size.height);
     path.close();
