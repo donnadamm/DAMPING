@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../data/dummy_data.dart';
 
 class DashboardAdminScreen extends StatefulWidget {
   const DashboardAdminScreen({super.key});
@@ -77,22 +78,26 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
 
             // 2. KARTU STATISTIK (Grid 2x2)
             Transform.translate(
-              offset: const Offset(
-                  0, -20), // Menarik grid sedikit ke atas agar menimpa header
+              offset: const Offset(0, -20),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
                 child: Column(
                   children: [
                     Row(
                       children: [
+                        // Angka diambil dari jumlah data siswa
                         Expanded(
-                            child: _buildStatCard('Total Siswa', '128',
-                                Icons.person_outline, const Color(0xFF2C7DEB))),
+                            child: _buildStatCard(
+                                'Total Siswa',
+                                DummyData.siswa.length.toString(),
+                                Icons.person_outline,
+                                const Color(0xFF2C7DEB))),
                         const SizedBox(width: 16),
+                        // Angka diambil dari jumlah data guru
                         Expanded(
                             child: _buildStatCard(
                                 'Total Guru',
-                                '12',
+                                DummyData.guru.length.toString(),
                                 Icons.school_outlined,
                                 const Color(0xFF2C7DEB))),
                       ],
@@ -100,13 +105,21 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
                     const SizedBox(height: 16),
                     Row(
                       children: [
+                        // Angka diambil dari jumlah data orang tua
                         Expanded(
-                            child: _buildStatCard('Total Orang Tua', '105',
-                                Icons.family_restroom, Colors.orange)),
+                            child: _buildStatCard(
+                                'Total Orang Tua',
+                                DummyData.orangTua.length.toString(),
+                                Icons.family_restroom,
+                                Colors.orange)),
                         const SizedBox(width: 16),
+                        // Angka diambil dari jumlah data pelanggaran
                         Expanded(
-                            child: _buildStatCard('Total Pelanggaran', '245',
-                                Icons.warning_amber_rounded, Colors.redAccent)),
+                            child: _buildStatCard(
+                                'Total Pelanggaran',
+                                DummyData.pelanggaran.length.toString(),
+                                Icons.warning_amber_rounded,
+                                Colors.redAccent)),
                       ],
                     ),
                   ],
@@ -137,30 +150,25 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
               ),
             ),
 
-            // List Pelanggaran
+            // List Pelanggaran Dinamis
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
               child: Column(
-                children: [
-                  _buildViolationItem(
-                      'Andi Pratama',
-                      'Terlambat masuk sekolah\n12 Sep 2026 • 5 poin',
-                      'SP 1',
-                      Colors.red.shade100,
-                      Colors.red),
-                  _buildViolationItem(
-                      'Citra Lestari',
-                      'Membolos\n10 Sep 2026 • 20 poin',
-                      'SP 2',
-                      Colors.orange.shade100,
-                      Colors.orange.shade800),
-                  _buildViolationItem(
-                      'Budi Santoso',
-                      'Tidak memakai atribut\n09 Sep 2026 • 5 poin',
-                      'Normal',
-                      Colors.green.shade100,
-                      Colors.green),
-                ],
+                children: DummyData.pelanggaran.map((data) {
+                  // Logika sederhana untuk menentukan warna badge
+                  Color badgeBg = Colors.green.shade100;
+                  Color badgeText = Colors.green;
+                  if (data['status'] == 'SP 1') {
+                    badgeBg = Colors.red.shade100;
+                    badgeText = Colors.red;
+                  } else if (data['status'] == 'SP 2') {
+                    badgeBg = Colors.orange.shade100;
+                    badgeText = Colors.orange.shade800;
+                  }
+
+                  return _buildViolationItem(data['nama'], data['kasus'],
+                      data['status'], badgeBg, badgeText);
+                }).toList(),
               ),
             ),
             const SizedBox(height: 24),
