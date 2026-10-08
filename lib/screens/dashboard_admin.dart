@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:damping_app/data/dummy_data.dart';
 import 'kelola_pengguna_screen.dart';
+import 'kelola_kelas_screen.dart';
 
 class DashboardAdminScreen extends StatefulWidget {
   const DashboardAdminScreen({super.key});
@@ -192,17 +193,15 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
                 children: [
                   Expanded(
                     child: GestureDetector(
-                      onTap: () async {
-                        // Pergi ke Kelola Pengguna, dan jika kembali, refresh Dashboard agar angkanya berubah
-                        await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) =>
-                                    const KelolaPenggunaScreen()));
-                        setState(() {});
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const KelolaKelasScreen()),
+                        );
                       },
                       child: _buildQuickAccessBtn(
-                          Icons.manage_accounts_outlined, 'Kelola Pengguna'),
+                          Icons.folder_shared_outlined, 'Kelola Data Kelas'),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -284,10 +283,14 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.between,
             children: [
-              Text(title,
-                  style: const TextStyle(fontSize: 12, color: Colors.black54)),
+              Expanded(
+                // <-- Ditambahkan Expanded agar aman dari overflow
+                child: Text(title,
+                    style: const TextStyle(fontSize: 12, color: Colors.black54),
+                    overflow: TextOverflow.ellipsis),
+              ),
               Icon(icon, color: iconColor, size: 20),
             ],
           ),
