@@ -12,13 +12,11 @@ class KelolaPenggunaScreen extends StatefulWidget {
 class _KelolaPenggunaScreenState extends State<KelolaPenggunaScreen> {
   String _selectedFilter = 'Semua';
 
-  // Menggabungkan seluruh data secara dinamis langsung dari DummyData
   List<Map<String, dynamic>> get _listPengguna {
     if (_selectedFilter == 'Guru') return DummyData.guru;
     if (_selectedFilter == 'Orang Tua') return DummyData.orangTua;
     if (_selectedFilter == 'Admin') return DummyData.admin;
 
-    // Jika 'Semua', gabungkan semua data dari DummyData (termasuk akun hasil Register)
     return [
       ...DummyData.admin,
       ...DummyData.guru,
@@ -48,7 +46,6 @@ class _KelolaPenggunaScreenState extends State<KelolaPenggunaScreen> {
       ),
       body: Column(
         children: [
-          // Search Bar
           Padding(
             padding: const EdgeInsets.all(20.0),
             child: TextField(
@@ -66,8 +63,6 @@ class _KelolaPenggunaScreenState extends State<KelolaPenggunaScreen> {
               ),
             ),
           ),
-
-          // Filter Tab (Pill Buttons)
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -111,57 +106,62 @@ class _KelolaPenggunaScreenState extends State<KelolaPenggunaScreen> {
             ),
           ),
           const SizedBox(height: 16),
-
-          // List Pengguna
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              itemCount: dataTampil.length,
-              itemBuilder: (context, index) {
-                var user = dataTampil[index];
-                return Column(
-                  children: [
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: CircleAvatar(
-                        radius: 22,
-                        backgroundColor: const Color(0xFFE8F1FF),
-                        child: Text(user['nama'][0],
-                            style: const TextStyle(
-                                color: Color(0xFF2C7DEB),
-                                fontWeight: FontWeight.bold)),
-                      ),
-                      title: Text(user['nama'],
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF0C356A),
-                              fontSize: 14)),
-                      subtitle: Text('${user['role']}\n${user['hp']}',
-                          style: TextStyle(
-                              color: Colors.grey.shade600,
-                              fontSize: 12,
-                              height: 1.4)),
-                      trailing: const Icon(Icons.more_vert, color: Colors.grey),
-                    ),
-                    Divider(color: Colors.grey.shade200),
-                  ],
-                );
-              },
-            ),
+            child: dataTampil.isEmpty
+                ? Center(
+                    child: Text('Tidak ada data',
+                        style: TextStyle(color: Colors.grey.shade500)),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                    itemCount: dataTampil.length,
+                    itemBuilder: (context, index) {
+                      var user = dataTampil[index];
+                      return Column(
+                        children: [
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: CircleAvatar(
+                              radius: 22,
+                              backgroundColor: const Color(0xFFE8F1FF),
+                              child: Text(
+                                  user['nama'] != null &&
+                                          user['nama'].toString().isNotEmpty
+                                      ? user['nama'][0]
+                                      : '?',
+                                  style: const TextStyle(
+                                      color: Color(0xFF2C7DEB),
+                                      fontWeight: FontWeight.bold)),
+                            ),
+                            title: Text(user['nama'] ?? 'Tanpa Nama',
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF0C356A),
+                                    fontSize: 14)),
+                            subtitle: Text(
+                                '${user['role'] ?? '-'}\n${user['hp'] ?? '-'}',
+                                style: TextStyle(
+                                    color: Colors.grey.shade600,
+                                    fontSize: 12,
+                                    height: 1.4)),
+                            trailing:
+                                const Icon(Icons.more_vert, color: Colors.grey),
+                          ),
+                          Divider(color: Colors.grey.shade200),
+                        ],
+                      );
+                    },
+                  ),
           ),
         ],
       ),
-      // Tombol Mengambang (Floating Action Button) untuk Tambah Pengguna
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
-          // Navigasi ke Halaman Tambah, lalu tunggu hasilnya
           bool? isAdded = await Navigator.push(
             context,
             MaterialPageRoute(
                 builder: (context) => const TambahPenggunaScreen()),
           );
-
-          // Jika true (ada data ditambahkan), Refresh halaman ini agar list bertambah!
           if (isAdded == true) {
             setState(() {});
           }

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'register_screen.dart';
 import 'package:damping_app/data/dummy_data.dart';
+import 'dashboard_admin.dart';
+import 'dashboard_guru.dart';
+import 'dashboard_parent.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -81,12 +84,25 @@ class _LoginScreenState extends State<LoginScreen> {
   void _navigateToDashboard(String route, String role) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Login Berhasil sebagai $role'),
-        backgroundColor: Colors.green,
-      ),
+          content: Text('Login Berhasil sebagai $role'),
+          backgroundColor: Colors.green),
     );
 
-    Navigator.pushReplacementNamed(context, route);
+    // Gunakan MaterialPageRoute agar terhindar dari error RouteNotFoud
+    if (role == 'Admin') {
+      Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+              builder: (context) => const DashboardAdminScreen()));
+    } else if (role == 'Guru') {
+      Navigator.pushReplacement(context,
+          MaterialPageRoute(builder: (context) => const DashboardGuruScreen()));
+    } else if (role == 'Orang Tua') {
+      Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+              builder: (context) => const DashboardParentScreen()));
+    }
   }
 
   @override

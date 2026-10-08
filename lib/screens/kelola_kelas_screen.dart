@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'tambah_kelas_screen.dart'; // Pastikan diimpor jika ingin tombol tambah berfungsi
 
 class KelolaKelasScreen extends StatefulWidget {
   const KelolaKelasScreen({super.key});
@@ -8,7 +9,6 @@ class KelolaKelasScreen extends StatefulWidget {
 }
 
 class _KelolaKelasScreenState extends State<KelolaKelasScreen> {
-  // Data dummy untuk daftar kelas
   final List<Map<String, dynamic>> _listKelas = [
     {
       'nama': 'X RPL 1',
@@ -64,7 +64,6 @@ class _KelolaKelasScreenState extends State<KelolaKelasScreen> {
       ),
       body: Column(
         children: [
-          // Search Bar & Tombol Tambah Kelas
           Padding(
             padding: const EdgeInsets.all(20.0),
             child: Row(
@@ -88,8 +87,15 @@ class _KelolaKelasScreenState extends State<KelolaKelasScreen> {
                 ),
                 const SizedBox(width: 12),
                 ElevatedButton.icon(
-                  onPressed: () {
-                    // TODO: Navigasi ke Form Tambah Kelas
+                  onPressed: () async {
+                    bool? isAdded = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const TambahKelasScreen()),
+                    );
+                    if (isAdded == true) {
+                      setState(() {});
+                    }
                   },
                   icon: const Icon(Icons.add, size: 18, color: Colors.white),
                   label: const Text('Tambah Kelas',
@@ -108,14 +114,13 @@ class _KelolaKelasScreenState extends State<KelolaKelasScreen> {
               ],
             ),
           ),
-
-          // Daftar Kelas (ListView)
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.symmetric(horizontal: 20.0),
               itemCount: _listKelas.length,
               itemBuilder: (context, index) {
                 var kelas = _listKelas[index];
+                Color warnaItem = kelas['warna'] ?? Colors.blue;
                 return Container(
                   margin: const EdgeInsets.only(bottom: 12),
                   padding: const EdgeInsets.all(16),
@@ -125,7 +130,7 @@ class _KelolaKelasScreenState extends State<KelolaKelasScreen> {
                     border: Border.all(color: Colors.grey.shade200),
                     boxShadow: [
                       BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.02),
+                          color: Colors.black.withValues(alpha:0.02),
                           blurRadius: 5,
                           offset: const Offset(0, 2)),
                     ],
@@ -135,11 +140,11 @@ class _KelolaKelasScreenState extends State<KelolaKelasScreen> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: kelas['warna'].withValues(alpha: 0.1),
+                          color: warnaItem.withValues(alpha: 0.1),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(Icons.class_outlined,
-                            color: kelas['warna'], size: 24),
+                            color: warnaItem, size: 24),
                       ),
                       const SizedBox(width: 16),
                       Expanded(

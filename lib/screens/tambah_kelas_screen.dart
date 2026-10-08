@@ -1,63 +1,42 @@
 import 'package:flutter/material.dart';
-import 'package:damping_app/data/dummy_data.dart';
 
-class TambahPenggunaScreen extends StatefulWidget {
-  const TambahPenggunaScreen({super.key});
+class TambahKelasScreen extends StatefulWidget {
+  const TambahKelasScreen({super.key});
 
   @override
-  State<TambahPenggunaScreen> createState() => _TambahPenggunaScreenState();
+  State<TambahKelasScreen> createState() => _TambahKelasScreenState();
 }
 
-class _TambahPenggunaScreenState extends State<TambahPenggunaScreen> {
-  final _namaController = TextEditingController();
-  final _hpController = TextEditingController();
-  final _passwordController = TextEditingController();
-  String _selectedRole = 'Guru';
+class _TambahKelasScreenState extends State<TambahKelasScreen> {
+  final _namaKelasController = TextEditingController();
+  final _jumlahSiswaController = TextEditingController();
+  // Solusi: Gunakan controller khusus untuk Tahun Ajaran
+  final _tahunAjaranController = TextEditingController(text: '2025/2026');
+  String _selectedWali = 'Bu Dona';
 
   @override
   void dispose() {
-    _namaController.dispose();
-    _hpController.dispose();
-    _passwordController.dispose();
+    _namaKelasController.dispose();
+    _jumlahSiswaController.dispose();
+    _tahunAjaranController.dispose(); // Pastikan di-dispose
     super.dispose();
   }
 
-  void _simpanPengguna() {
-    if (_namaController.text.isEmpty ||
-        _hpController.text.isEmpty ||
-        _passwordController.text.isEmpty) {
+  void _simpanKelas() {
+    if (_namaKelasController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('Nama, Nomor HP, dan Password wajib diisi!'),
+            content: Text('Nama kelas wajib diisi!'),
             backgroundColor: Colors.redAccent),
       );
       return;
     }
 
-    // Solusi: Data yang disimpan harus mencakup password, dan harus menyimpan role 'Admin'
-    Map<String, dynamic> newUser = {
-      'nama': _namaController.text.trim(),
-      'hp': _hpController.text.trim(),
-      'password': _passwordController.text.trim(),
-      'role':
-          _selectedRole == 'Guru' ? 'Guru - Wali Kelas (Baru)' : _selectedRole,
-    };
-
-    if (_selectedRole == 'Guru') {
-      DummyData.guru.add(newUser);
-    } else if (_selectedRole == 'Orang Tua') {
-      DummyData.orangTua.add(newUser);
-    } else if (_selectedRole == 'Admin') {
-      DummyData.admin
-          .add(newUser); // <-- Sekarang akun Admin berhasil tersimpan!
-    }
-
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-          content: Text('Pengguna berhasil ditambahkan!'),
+          content: Text('Kelas berhasil ditambahkan!'),
           backgroundColor: Colors.green),
     );
-
     Navigator.pop(context, true);
   }
 
@@ -66,7 +45,7 @@ class _TambahPenggunaScreenState extends State<TambahPenggunaScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Tambah Pengguna',
+        title: const Text('Tambah Kelas',
             style: TextStyle(
                 color: Color(0xFF0C356A),
                 fontSize: 18,
@@ -84,27 +63,13 @@ class _TambahPenggunaScreenState extends State<TambahPenggunaScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildLabel('Nama Lengkap *'),
+            _buildLabel('Nama Kelas *'),
             _buildTextField(
-                controller: _namaController,
-                hint: 'Masukkan nama lengkap',
-                icon: Icons.person_outline),
+                controller: _namaKelasController,
+                hint: 'Contoh: X RPL 1',
+                icon: Icons.class_outlined),
             const SizedBox(height: 20),
-            _buildLabel('Nomor HP *'),
-            _buildTextField(
-                controller: _hpController,
-                hint: '081xxxxxxxxxx',
-                icon: Icons.phone_outlined,
-                isNumber: true),
-            const SizedBox(height: 20),
-            _buildLabel('Password *'),
-            _buildTextField(
-                controller: _passwordController,
-                hint: 'Minimal 6 karakter',
-                icon: Icons.lock_outline,
-                isObscure: true),
-            const SizedBox(height: 20),
-            _buildLabel('Role *'),
+            _buildLabel('Wali Kelas *'),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
@@ -114,35 +79,39 @@ class _TambahPenggunaScreenState extends State<TambahPenggunaScreen> {
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
-                  value: _selectedRole,
+                  value: _selectedWali,
                   isExpanded: true,
                   icon: const Icon(Icons.keyboard_arrow_down_rounded,
                       color: Color(0xFF2C7DEB)),
-                  items: ['Guru', 'Orang Tua', 'Admin'].map((String role) {
+                  items: [
+                    'Bu Dona',
+                    'Pak Budi',
+                    'Bu Sari',
+                    'Pak Ahmad',
+                    'Bu Risa'
+                  ].map((String wali) {
                     return DropdownMenuItem<String>(
-                      value: role,
-                      child: Row(
-                        children: [
-                          Icon(
-                            role == 'Guru'
-                                ? Icons.school_outlined
-                                : role == 'Orang Tua'
-                                    ? Icons.family_restroom
-                                    : Icons.admin_panel_settings_outlined,
-                            color: const Color(0xFF2C7DEB),
-                            size: 20,
-                          ),
-                          const SizedBox(width: 12),
-                          Text(role, style: const TextStyle(fontSize: 14)),
-                        ],
-                      ),
+                      value: wali,
+                      child: Text(wali, style: const TextStyle(fontSize: 14)),
                     );
                   }).toList(),
-                  onChanged: (newValue) =>
-                      setState(() => _selectedRole = newValue!),
+                  onChanged: (val) => setState(() => _selectedWali = val!),
                 ),
               ),
             ),
+            const SizedBox(height: 20),
+            _buildLabel('Tahun Ajaran *'),
+            _buildTextField(
+                controller: _tahunAjaranController,
+                hint: '2025/2026',
+                icon: Icons.calendar_today_outlined),
+            const SizedBox(height: 20),
+            _buildLabel('Jumlah Siswa *'),
+            _buildTextField(
+                controller: _jumlahSiswaController,
+                hint: 'Masukkan jumlah siswa',
+                icon: Icons.group_outlined,
+                isNumber: true),
             const SizedBox(height: 20),
             Container(
               padding: const EdgeInsets.all(16),
@@ -157,7 +126,7 @@ class _TambahPenggunaScreenState extends State<TambahPenggunaScreen> {
                   SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Untuk orang tua, pastikan sudah terdaftar sebagai wali dari siswa.',
+                      'Setelah kelas dibuat, Anda dapat menambahkan data siswa melalui Kelola Data Siswa.',
                       style: TextStyle(
                           color: Color(0xFF1E56A0), fontSize: 12, height: 1.4),
                     ),
@@ -170,13 +139,13 @@ class _TambahPenggunaScreenState extends State<TambahPenggunaScreen> {
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                onPressed: _simpanPengguna,
+                onPressed: _simpanKelas,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF2C7DEB),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
                 ),
-                child: const Text('Simpan Pengguna',
+                child: const Text('Simpan Kelas',
                     style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -204,12 +173,10 @@ class _TambahPenggunaScreenState extends State<TambahPenggunaScreen> {
       {required TextEditingController controller,
       required String hint,
       required IconData icon,
-      bool isNumber = false,
-      bool isObscure = false}) {
+      bool isNumber = false}) {
     return TextField(
       controller: controller,
-      keyboardType: isNumber ? TextInputType.phone : TextInputType.text,
-      obscureText: isObscure,
+      keyboardType: isNumber ? TextInputType.number : TextInputType.text,
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
