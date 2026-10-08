@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:damping_app/data/dummy_data.dart';
-import 'kelola_pengguna_screen.dart'; 
+import 'kelola_pengguna_screen.dart';
 import 'kelola_kelas_screen.dart';
 import 'kelola_data_siswa_screen.dart';
 import 'pelanggaran_screen.dart';
+import 'rekap_screen.dart';
 
 class DashboardAdminScreen extends StatefulWidget {
   const DashboardAdminScreen({super.key});
@@ -270,14 +271,18 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
             setState(() {
               _selectedIndex = index;
             });
-            // Logika perpindahan halaman yang sudah diisi
+
             if (index == 1) {
               Navigator.push(
                   context,
                   MaterialPageRoute(
                       builder: (context) => const PelanggaranScreen()));
-            }
-            // Tambahkan rute untuk index 2, 3, 4 jika halamannya sudah dibuat
+            } else if (index == 2) {
+              // --- TAMBAHKAN BARIS INI ---
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (context) => const RekapScreen()));
+            } else if (index == 3) {
+            } else if (index == 4) {}
           },
           type: BottomNavigationBarType.fixed,
           selectedItemColor: const Color(0xFF2C7DEB),
