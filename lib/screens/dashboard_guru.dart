@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
 import 'pelanggaran_screen.dart';
 
-class DashboardGuruScreen extends StatelessWidget {
+class DashboardGuruScreen extends StatefulWidget {
   const DashboardGuruScreen({super.key});
+
+  @override
+  State<DashboardGuruScreen> createState() => _DashboardGuruScreenState();
+}
+
+class _DashboardGuruScreenState extends State<DashboardGuruScreen> {
+  int _selectedIndex = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -25,16 +32,14 @@ class DashboardGuruScreen extends StatelessWidget {
       ),
 
       // =========================
-      // BODY
+      // BODY (KONTEN BERANDA)
       // =========================
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // =========================
             // SAPAAN
-            // =========================
             const Text(
               'Halo, Bu Dona 👋',
               style: TextStyle(
@@ -43,9 +48,7 @@ class DashboardGuruScreen extends StatelessWidget {
                 color: Color(0xFF163B75),
               ),
             ),
-
             const SizedBox(height: 5),
-
             const Text(
               'Selamat datang di DAMPING',
               style: TextStyle(
@@ -53,12 +56,9 @@ class DashboardGuruScreen extends StatelessWidget {
                 color: Color(0xFF64748B),
               ),
             ),
-
             const SizedBox(height: 25),
 
-            // =========================
             // STATISTIK
-            // =========================
             Row(
               children: [
                 Expanded(
@@ -80,9 +80,7 @@ class DashboardGuruScreen extends StatelessWidget {
                 ),
               ],
             ),
-
             const SizedBox(height: 12),
-
             Row(
               children: [
                 Expanded(
@@ -104,12 +102,9 @@ class DashboardGuruScreen extends StatelessWidget {
                 ),
               ],
             ),
-
             const SizedBox(height: 30),
 
-            // =========================
             // JUDUL PELANGGARAN
-            // =========================
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -140,12 +135,9 @@ class DashboardGuruScreen extends StatelessWidget {
                 ),
               ],
             ),
-
             const SizedBox(height: 12),
 
-            // =========================
-            // CARD PELANGGARAN 1
-            // =========================
+            // CARD PELANGGARAN
             _buildViolationCard(
               nama: 'Andi Pratama',
               pelanggaran: 'Terlambat masuk sekolah',
@@ -155,10 +147,6 @@ class DashboardGuruScreen extends StatelessWidget {
               statusColor: const Color(0xFFFFE1E5),
               statusTextColor: const Color(0xFFE5394F),
             ),
-
-            // =========================
-            // CARD PELANGGARAN 2
-            // =========================
             _buildViolationCard(
               nama: 'Citra Lestari',
               pelanggaran: 'Membolos',
@@ -168,10 +156,6 @@ class DashboardGuruScreen extends StatelessWidget {
               statusColor: const Color(0xFFFFE8C7),
               statusTextColor: const Color(0xFFE88A00),
             ),
-
-            // =========================
-            // CARD PELANGGARAN 3
-            // =========================
             _buildViolationCard(
               nama: 'Budi Santoso',
               pelanggaran: 'Tidak memakai atribut',
@@ -181,12 +165,9 @@ class DashboardGuruScreen extends StatelessWidget {
               statusColor: const Color(0xFFDDF5E3),
               statusTextColor: const Color(0xFF42A85F),
             ),
-
             const SizedBox(height: 25),
 
-            // =========================
-            // TOMBOL PELANGGARAN
-            // =========================
+            // TOMBOL KELOLA PELANGGARAN
             SizedBox(
               width: double.infinity,
               height: 52,
@@ -220,13 +201,78 @@ class DashboardGuruScreen extends StatelessWidget {
           ],
         ),
       ),
+
+      // =========================
+      // BOTTOM NAVIGATION BAR
+      // =========================
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: BottomNavigationBar(
+          currentIndex: _selectedIndex,
+          onTap: (index) {
+            setState(() {
+              _selectedIndex = index;
+            });
+
+            // Logika perpindahan halaman saat menu diklik
+            if (index == 1) {
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const PelanggaranScreen()));
+            } else if (index == 2) {
+              // TODO: Arahkan ke Rekap Guru
+            } else if (index == 3) {
+              // TODO: Arahkan ke Notifikasi
+            } else if (index == 4) {
+              // TODO: Arahkan ke Profil Guru
+            }
+          },
+          type: BottomNavigationBarType.fixed,
+          selectedItemColor: const Color(0xFF2C7DEB),
+          unselectedItemColor: Colors.grey.shade400,
+          showUnselectedLabels: true,
+          selectedFontSize: 11,
+          unselectedFontSize: 11,
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home_filled),
+              label: 'Beranda',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.rule_folder_outlined),
+              label: 'Pelanggaran',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.pie_chart_outline),
+              label: 'Rekap',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.notifications_none_rounded),
+              label: 'Notifikasi',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline),
+              label: 'Profil',
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   // ==========================================================
-  // WIDGET STATISTIK
+  // WIDGET BANTUAN STATISTIK & CARD
   // ==========================================================
-
   Widget _buildStatCard({
     required IconData icon,
     required String title,
@@ -240,7 +286,7 @@ class DashboardGuruScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Colors.black.withOpacity(0.04),
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
@@ -252,37 +298,20 @@ class DashboardGuruScreen extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: Color(0xFF64748B),
-                ),
-              ),
-              Icon(
-                icon,
-                color: color,
-                size: 25,
-              ),
+              Text(title,
+                  style:
+                      const TextStyle(fontSize: 13, color: Color(0xFF64748B))),
+              Icon(icon, color: color, size: 25),
             ],
           ),
           const SizedBox(height: 12),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 27,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
+          Text(value,
+              style: TextStyle(
+                  fontSize: 27, fontWeight: FontWeight.bold, color: color)),
         ],
       ),
     );
   }
-
-  // ==========================================================
-  // WIDGET CARD PELANGGARAN
-  // ==========================================================
 
   Widget _buildViolationCard({
     required String nama,
@@ -301,7 +330,7 @@ class DashboardGuruScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Colors.black.withOpacity(0.04),
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
@@ -309,10 +338,6 @@ class DashboardGuruScreen extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // =========================
-          // AVATAR
-          // =========================
-
           Container(
             width: 50,
             height: 50,
@@ -324,63 +349,36 @@ class DashboardGuruScreen extends StatelessWidget {
               child: Text(
                 nama[0],
                 style: const TextStyle(
-                  fontSize: 19,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF2C7DEB),
-                ),
+                    fontSize: 19,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF2C7DEB)),
               ),
             ),
           ),
-
           const SizedBox(width: 14),
-
-          // =========================
-          // INFORMASI
-          // =========================
-
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  nama,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF163B75),
-                  ),
-                ),
+                Text(nama,
+                    style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF163B75))),
                 const SizedBox(height: 4),
-                Text(
-                  pelanggaran,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: Color(0xFF64748B),
-                  ),
-                ),
+                Text(pelanggaran,
+                    style: const TextStyle(
+                        fontSize: 13, color: Color(0xFF64748B))),
                 const SizedBox(height: 5),
-                Text(
-                  '$tanggal • $poin',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: Color(0xFF94A3B8),
-                  ),
-                ),
+                Text('$tanggal • $poin',
+                    style: const TextStyle(
+                        fontSize: 11, color: Color(0xFF94A3B8))),
               ],
             ),
           ),
-
           const SizedBox(width: 8),
-
-          // =========================
-          // STATUS
-          // =========================
-
           Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 10,
-              vertical: 7,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
             decoration: BoxDecoration(
               color: statusColor,
               borderRadius: BorderRadius.circular(20),
@@ -388,10 +386,9 @@ class DashboardGuruScreen extends StatelessWidget {
             child: Text(
               status,
               style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                color: statusTextColor,
-              ),
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: statusTextColor),
             ),
           ),
         ],
