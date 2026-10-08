@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'catat_pelanggaran_screen.dart';
 
 class PelanggaranScreen extends StatefulWidget {
   const PelanggaranScreen({super.key});
@@ -204,7 +205,12 @@ class _PelanggaranScreenState extends State<PelanggaranScreen> {
         backgroundColor: const Color(0xFF2C7DEB),
         foregroundColor: Colors.white,
         onPressed: () {
-          // Nanti diarahkan ke halaman tambah pelanggaran
+          // Navigasi ke halaman Catat Pelanggaran
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) => const CatatPelanggaranScreen()),
+          );
         },
         child: const Icon(Icons.add),
       ),
