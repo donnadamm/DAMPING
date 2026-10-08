@@ -5,6 +5,7 @@ import 'kelola_kelas_screen.dart';
 import 'kelola_data_siswa_screen.dart';
 import 'pelanggaran_screen.dart';
 import 'rekap_screen.dart';
+import 'pengaturan_screen.dart';
 
 class DashboardAdminScreen extends StatefulWidget {
   const DashboardAdminScreen({super.key});
@@ -278,10 +279,14 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
                   MaterialPageRoute(
                       builder: (context) => const PelanggaranScreen()));
             } else if (index == 2) {
-              // --- TAMBAHKAN BARIS INI ---
               Navigator.push(context,
                   MaterialPageRoute(builder: (context) => const RekapScreen()));
             } else if (index == 3) {
+              // --- TAMBAHKAN BARIS INI ---
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const PengaturanScreen()));
             } else if (index == 4) {}
           },
           type: BottomNavigationBarType.fixed,
