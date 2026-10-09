@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'notifikasi_parent_screen.dart';
+import 'riwayat_parent_screen.dart';
+import 'profil_parent_screen.dart';
 
 class DashboardParentScreen extends StatefulWidget {
   const DashboardParentScreen({super.key});
@@ -17,10 +20,9 @@ class _DashboardParentScreenState extends State<DashboardParentScreen> {
       _BerandaParentContent(
         onNavigate: (index) => setState(() => _selectedIndex = index),
       ),
-      const Scaffold(
-          body: Center(child: Text('Halaman Notifikasi Belum Dibuat'))),
-      const Scaffold(body: Center(child: Text('Halaman Riwayat Belum Dibuat'))),
-      const Scaffold(body: Center(child: Text('Halaman Profil Belum Dibuat'))),
+      const NotifikasiParentScreen(),
+      const RiwayatParentScreen(),
+      const ProfilParentScreen(),
     ];
 
     return Scaffold(
