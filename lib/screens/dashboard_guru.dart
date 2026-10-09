@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'pelanggaran_screen.dart';
-import 'rekap_guru_screen.dart'; // Pastikan kamu sudah membuat file ini dari instruksi sebelumnya
+import 'rekap_guru_screen.dart';
+import 'notifikasi_screen.dart';
+import 'profil_guru_screen.dart';
 
 class DashboardGuruScreen extends StatefulWidget {
   const DashboardGuruScreen({super.key});
@@ -26,6 +28,8 @@ class _DashboardGuruScreenState extends State<DashboardGuruScreen> {
       ),
       const PelanggaranScreen(),
       const RekapGuruScreen(),
+      const NotifikasiScreen(),
+      const ProfilGuruScreen(),
       const Scaffold(
           body: Center(child: Text('Halaman Notifikasi Belum Dibuat'))),
       const Scaffold(body: Center(child: Text('Halaman Profil Belum Dibuat'))),
