@@ -55,24 +55,42 @@ class _KelolaDataSiswaScreenState extends State<KelolaDataSiswaScreen> {
 
   Future<void> _loadData() async {
     if (!mounted) return;
-    setState(() => _isLoading = true);
+
+    setState(() {
+      _isLoading = true;
+    });
 
     try {
-      final results = await Future.wait([
-        _database.getAll('students', orderBy: 'name ASC'),
-        _database.getAll('classes', orderBy: 'name ASC'),
-      ]);
+      final students = await _database.getAll(
+        'students',
+        orderBy: 'name ASC',
+      );
 
       if (!mounted) return;
+
+      final classes = await _database.getAll(
+        'classes',
+        orderBy: 'name ASC',
+      );
+
+      if (!mounted) return;
+
       setState(() {
-        _students = results[0];
-        _classes = results[1];
+        _students = students;
+        _classes = classes;
         _isLoading = false;
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() => _isLoading = false);
-      _showMessage('Gagal memuat data siswa: $e', isError: true);
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      _showMessage(
+        'Gagal memuat data siswa: $e',
+        isError: true,
+      );
     }
   }
 
