@@ -12,733 +12,836 @@ class _KelolaDataSiswaScreenState extends State<KelolaDataSiswaScreen> {
   final LocalDatabase _database = LocalDatabase.instance;
   final TextEditingController _searchController = TextEditingController();
 
-  List<Map<String, dynamic>> _listSiswa = [];
-  List<Map<String, dynamic>> _listKelas = [];
+  List<Map<String, Object?>> _students = [];
+  List<Map<String, Object?>> _classes = [];
 
   bool _isLoading = true;
-  String _kataKunci = '';
+  String _searchQuery = '';
 
-  static const Color _primary = Color(0xFF2C7DEB);
-  static const Color _navy = Color(0xFF0C356A);
-  static const Color _background = Color(0xFFF8FAFC);
+  static const Color primary = Color(0xFF246BCE);
+  static const Color navy = Color(0xFF163B75);
+  static const Color background = Color(0xFFF5F8FC);
 
   @override
   void initState() {
     super.initState();
-    _muatData();
+
+    _searchController.addListener(_onSearchChanged);
+    _loadData();
+  }
+
+  void _onSearchChanged() {
+    if (!mounted) return;
+
+    setState(() {
+      _searchQuery = _searchController.text.trim().toLowerCase();
+    });
   }
 
   @override
   void dispose() {
+    _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     super.dispose();
   }
 
-  Future<void> _muatData() async {
-    if (mounted) {
-      setState(() => _isLoading = true);
-    }
+  // ==========================================================
+  // MEMUAT DATA DARI SQLITE
+  // ==========================================================
+
+  Future<void> _loadData() async {
+    if (!mounted) return;
+
+    setState(() => _isLoading = true);
 
     try {
-      final db = await _database.database;
-
-      final kelas = await db.query(
-        'classes',
-        orderBy: 'name ASC',
-      );
-
-      final siswa = await db.rawQuery('''
-        SELECT
-          s.id,
-          s.nis,
-          s.name AS nama,
-          s.class_id,
-          c.name AS kelas,
-          COALESCE((
-            SELECT SUM(v.points)
-            FROM violations v
-            WHERE v.student_id = s.id
-              AND v.status IN ('Disetujui', 'Terverifikasi')
-          ), 0) AS total_poin
-        FROM students s
-        LEFT JOIN classes c ON c.id = s.class_id
-        ORDER BY s.name ASC
-      ''');
+      final results = await Future.wait([
+        _database.getAll('students', orderBy: 'name ASC'),
+        _database.getAll('classes', orderBy: 'name ASC'),
+      ]);
 
       if (!mounted) return;
 
       setState(() {
-        _listKelas = kelas;
-        _listSiswa = siswa;
+        _students = results[0];
+        _classes = results[1];
         _isLoading = false;
       });
     } catch (e) {
       if (!mounted) return;
 
       setState(() => _isLoading = false);
-      _tampilkanPesan('Gagal memuat data siswa: $e');
-    }
-  }
-
-  List<Map<String, dynamic>> get _siswaTerfilter {
-    final kata = _kataKunci.toLowerCase().trim();
-
-    return _listSiswa.where((siswa) {
-      final nama = (siswa['nama'] ?? '').toString().toLowerCase();
-      final nis = (siswa['nis'] ?? '').toString().toLowerCase();
-
-      return nama.contains(kata) || nis.contains(kata);
-    }).toList();
-  }
-
-  String _statusSiswa(Map<String, dynamic> siswa) {
-    final poin = (siswa['total_poin'] as num?)?.toInt() ?? 0;
-
-    // Batas ini adalah konfigurasi awal proyek.
-    // Nanti akan diambil dari aturan SP yang dikelola Admin.
-    if (poin >= 76) return 'SP 3';
-    if (poin >= 51) return 'SP 2';
-    if (poin >= 25) return 'SP 1';
-    if (poin >= 10) return 'Peringatan';
-    return 'Normal';
-  }
-
-  Color _warnaStatus(String status) {
-    switch (status) {
-      case 'SP 3':
-        return const Color(0xFF7C3AED);
-      case 'SP 2':
-        return const Color(0xFFF59E0B);
-      case 'SP 1':
-        return const Color(0xFFE85D75);
-      case 'Peringatan':
-        return const Color(0xFFEA8A15);
-      default:
-        return const Color(0xFF16A34A);
-    }
-  }
-
-  Future<void> _bukaFormSiswa({
-    Map<String, dynamic>? siswa,
-  }) async {
-    final formKey = GlobalKey<FormState>();
-    final namaController = TextEditingController(
-      text: siswa?['nama']?.toString() ?? '',
-    );
-    final nisController = TextEditingController(
-      text: siswa?['nis']?.toString() ?? '',
-    );
-
-    int? kelasTerpilih = (siswa?['class_id'] as num?)?.toInt();
-
-    // Pastikan kelas lama masih tersedia dalam daftar pilihan.
-    if (kelasTerpilih != null &&
-        !_listKelas.any((k) => k['id'] == kelasTerpilih)) {
-      kelasTerpilih = null;
-    }
-
-    final isEdit = siswa != null;
-
-    final hasil = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              backgroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              title: Text(
-                isEdit ? 'Edit Data Siswa' : 'Tambah Siswa',
-                style: const TextStyle(
-                  color: _navy,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              content: SingleChildScrollView(
-                child: Form(
-                  key: formKey,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TextFormField(
-                        controller: namaController,
-                        textCapitalization: TextCapitalization.words,
-                        decoration: _dekorasiInput(
-                          'Nama lengkap siswa',
-                          Icons.person_outline,
-                        ),
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Nama siswa wajib diisi';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 14),
-                      TextFormField(
-                        controller: nisController,
-                        decoration: _dekorasiInput(
-                          'NIS',
-                          Icons.badge_outlined,
-                        ),
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'NIS wajib diisi';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 14),
-                      DropdownButtonFormField<int>(
-                        initialValue: kelasTerpilih,
-                        isExpanded: true,
-                        decoration: _dekorasiInput(
-                          'Kelas',
-                          Icons.class_outlined,
-                        ),
-                        hint: const Text('Pilih kelas'),
-                        items: _listKelas.map((kelas) {
-                          return DropdownMenuItem<int>(
-                            value: (kelas['id'] as num).toInt(),
-                            child: Text(
-                              kelas['name'].toString(),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          setDialogState(() {
-                            kelasTerpilih = value;
-                          });
-                        },
-                      ),
-                      if (_listKelas.isEmpty) ...[
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Belum ada data kelas. Kamu dapat menyimpan '
-                          'siswa tanpa kelas terlebih dahulu, lalu '
-                          'menghubungkannya setelah kelas dibuat.',
-                          style: TextStyle(
-                            color: Colors.orange,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext, false),
-                  child: const Text(
-                    'Batal',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _primary,
-                    foregroundColor: Colors.white,
-                  ),
-                  onPressed: () async {
-                    if (!formKey.currentState!.validate()) return;
-
-                    try {
-                      final db = await _database.database;
-                      final nis = nisController.text.trim();
-
-                      final duplikat = await db.query(
-                        'students',
-                        columns: ['id'],
-                        where: 'nis = ? AND id != ?',
-                        whereArgs: [nis, siswa?['id'] ?? -1],
-                        limit: 1,
-                      );
-
-                      if (duplikat.isNotEmpty) {
-                        if (!dialogContext.mounted) return;
-
-                        ScaffoldMessenger.of(dialogContext)
-                          ..hideCurrentSnackBar()
-                          ..showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'NIS sudah digunakan siswa lain.',
-                              ),
-                            ),
-                          );
-                        return;
-                      }
-
-                      final data = <String, Object?>{
-                        'name': namaController.text.trim(),
-                        'nis': nis,
-                        'class_id': kelasTerpilih,
-                      };
-
-                      if (isEdit) {
-                        await _database.updateById(
-                          'students',
-                          (siswa['id'] as num).toInt(),
-                          data,
-                        );
-                      } else {
-                        data['created_at'] = DateTime.now().toIso8601String();
-
-                        await _database.insert('students', data);
-                      }
-
-                      if (dialogContext.mounted) {
-                        Navigator.pop(dialogContext, true);
-                      }
-                    } catch (e) {
-                      if (!dialogContext.mounted) return;
-
-                      ScaffoldMessenger.of(dialogContext)
-                        ..hideCurrentSnackBar()
-                        ..showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Gagal menyimpan data siswa: $e',
-                            ),
-                          ),
-                        );
-                    }
-                  },
-                  child: Text(isEdit ? 'Simpan Perubahan' : 'Simpan'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-
-    namaController.dispose();
-    nisController.dispose();
-
-    if (hasil == true && mounted) {
-      await _muatData();
-      _tampilkanPesan(
-        isEdit
-            ? 'Data siswa berhasil diperbarui.'
-            : 'Siswa berhasil ditambahkan.',
+      _showMessage(
+        'Gagal memuat data siswa: $e',
+        isError: true,
       );
     }
   }
 
-  Future<void> _hapusSiswa(Map<String, dynamic> siswa) async {
-    final konfirmasi = await showDialog<bool>(
+  List<Map<String, Object?>> get _filteredStudents {
+    return _students.where((student) {
+      final name = (student['name'] ?? '').toString().toLowerCase();
+      final nis = (student['nis'] ?? '').toString().toLowerCase();
+
+      return name.contains(_searchQuery) || nis.contains(_searchQuery);
+    }).toList();
+  }
+
+  String _className(Object? classId) {
+    if (classId == null) return 'Belum ada kelas';
+
+    for (final item in _classes) {
+      if (item['id'].toString() == classId.toString()) {
+        return item['name'].toString();
+      }
+    }
+
+    return 'Kelas tidak ditemukan';
+  }
+
+  // ==========================================================
+  // FORM TAMBAH DAN EDIT SISWA
+  // ==========================================================
+
+  Future<void> _showStudentForm({
+    Map<String, Object?>? student,
+  }) async {
+    final bool isEditing = student != null;
+
+    final nisController = TextEditingController(
+      text: student?['nis']?.toString() ?? '',
+    );
+
+    final nameController = TextEditingController(
+      text: student?['name']?.toString() ?? '',
+    );
+
+    int? selectedClassId =
+        student?['class_id'] is int ? student!['class_id'] as int : null;
+
+    if (selectedClassId != null &&
+        !_classes.any(
+            (item) => item['id'].toString() == selectedClassId.toString())) {
+      selectedClassId = null;
+    }
+
+    final formKey = GlobalKey<FormState>();
+
+    try {
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) {
+          bool isSaving = false;
+
+          return StatefulBuilder(
+            builder: (context, setDialogState) {
+              return AlertDialog(
+                backgroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                title: Text(
+                  isEditing ? 'Edit Data Siswa' : 'Tambah Siswa',
+                  style: const TextStyle(
+                    color: navy,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                content: SizedBox(
+                  // Lebar dialog dibatasi berdasarkan layar HP.
+                  width: MediaQuery.sizeOf(context).width * 0.82,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      maxWidth: 420,
+                    ),
+                    child: SingleChildScrollView(
+                      child: Form(
+                        key: formKey,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            TextFormField(
+                              controller: nisController,
+                              decoration: _inputDecoration(
+                                'Nomor Induk Siswa (NIS)',
+                                Icons.badge_outlined,
+                              ),
+                              textInputAction: TextInputAction.next,
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'NIS wajib diisi';
+                                }
+
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              controller: nameController,
+                              textCapitalization: TextCapitalization.words,
+                              textInputAction: TextInputAction.done,
+                              decoration: _inputDecoration(
+                                'Nama lengkap siswa',
+                                Icons.person_outline,
+                              ),
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'Nama siswa wajib diisi';
+                                }
+
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                            DropdownButtonFormField<int?>(
+                              initialValue: selectedClassId,
+                              isExpanded: true,
+                              decoration: _inputDecoration(
+                                'Kelas',
+                                Icons.school_outlined,
+                              ),
+                              items: [
+                                const DropdownMenuItem<int?>(
+                                  value: null,
+                                  child: Text(
+                                    'Belum ditentukan',
+                                  ),
+                                ),
+                                ..._classes.map((item) {
+                                  return DropdownMenuItem<int?>(
+                                    value: item['id'] as int,
+                                    child: Text(
+                                      item['name'].toString(),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  );
+                                }),
+                              ],
+                              onChanged: (value) {
+                                setDialogState(() {
+                                  selectedClassId = value;
+                                });
+                              },
+                            ),
+                            if (_classes.isEmpty) ...[
+                              const SizedBox(height: 10),
+                              const Text(
+                                'Belum ada kelas. Data siswa tetap '
+                                'bisa disimpan tanpa kelas. Tambahkan '
+                                'kelas melalui menu Kelola Kelas.',
+                                style: TextStyle(
+                                  color: Colors.orange,
+                                  fontSize: 12,
+                                  height: 1.4,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed:
+                        isSaving ? null : () => Navigator.pop(dialogContext),
+                    child: const Text(
+                      'Batal',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primary,
+                      foregroundColor: Colors.white,
+                    ),
+                    onPressed: isSaving
+                        ? null
+                        : () async {
+                            if (!formKey.currentState!.validate()) {
+                              return;
+                            }
+
+                            setDialogState(() {
+                              isSaving = true;
+                            });
+
+                            try {
+                              final nis = nisController.text.trim();
+                              final name = nameController.text.trim();
+
+                              // Pastikan NIS tidak digunakan
+                              // oleh siswa lainnya.
+                              final duplicate = _students.any((item) {
+                                final sameNis =
+                                    item['nis'].toString().toLowerCase() ==
+                                        nis.toLowerCase();
+
+                                final sameStudent = item['id']?.toString() ==
+                                    student?['id']?.toString();
+
+                                return sameNis && !sameStudent;
+                              });
+
+                              if (duplicate) {
+                                setDialogState(() {
+                                  isSaving = false;
+                                });
+
+                                _showMessage(
+                                  'NIS tersebut sudah digunakan.',
+                                  isError: true,
+                                );
+                                return;
+                              }
+
+                              final values = <String, Object?>{
+                                'nis': nis,
+                                'name': name,
+                                'class_id': selectedClassId,
+                              };
+
+                              if (isEditing) {
+                                await _database.updateById(
+                                  'students',
+                                  student['id'] as int,
+                                  values,
+                                );
+                              } else {
+                                values['created_at'] =
+                                    DateTime.now().toIso8601String();
+
+                                await _database.insert(
+                                  'students',
+                                  values,
+                                );
+                              }
+
+                              if (!dialogContext.mounted) {
+                                return;
+                              }
+
+                              Navigator.pop(dialogContext);
+
+                              await _loadData();
+
+                              if (!mounted) return;
+
+                              _showMessage(
+                                isEditing
+                                    ? 'Data siswa berhasil diperbarui.'
+                                    : 'Siswa berhasil ditambahkan.',
+                              );
+                            } catch (e) {
+                              if (!dialogContext.mounted) {
+                                return;
+                              }
+
+                              setDialogState(() {
+                                isSaving = false;
+                              });
+
+                              _showMessage(
+                                'Gagal menyimpan data siswa: $e',
+                                isError: true,
+                              );
+                            }
+                          },
+                    child: isSaving
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Text(
+                            isEditing ? 'Simpan' : 'Tambah',
+                          ),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+    } finally {
+      nisController.dispose();
+      nameController.dispose();
+    }
+  }
+
+  // ==========================================================
+  // HAPUS SISWA
+  // ==========================================================
+
+  Future<void> _deleteStudent(
+    Map<String, Object?> student,
+  ) async {
+    final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Hapus Data Siswa'),
+      builder: (dialogContext) => AlertDialog(
+        title: const Text(
+          'Hapus Data Siswa',
+          style: TextStyle(
+            color: navy,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         content: Text(
-          'Yakin ingin menghapus data ${siswa['nama']}?',
+          'Apakah kamu yakin ingin menghapus '
+          '${student['name']}?',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.pop(dialogContext, false),
             child: const Text('Batal'),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
+              backgroundColor: Colors.red,
               foregroundColor: Colors.white,
             ),
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pop(dialogContext, true),
             child: const Text('Hapus'),
           ),
         ],
       ),
     );
 
-    if (konfirmasi != true || !mounted) return;
+    if (confirmed != true || !mounted) return;
 
     try {
       final db = await _database.database;
 
-      // Cegah penghapusan jika siswa sudah memiliki catatan pelanggaran.
-      final pelanggaran = await db.query(
+      // Riwayat pelanggaran harus tetap terjaga.
+      final violations = await db.query(
         'violations',
         columns: ['id'],
         where: 'student_id = ?',
-        whereArgs: [siswa['id']],
+        whereArgs: [student['id']],
         limit: 1,
       );
 
-      if (pelanggaran.isNotEmpty) {
-        _tampilkanPesan(
+      if (violations.isNotEmpty) {
+        _showMessage(
           'Siswa memiliki riwayat pelanggaran. '
           'Data tidak dihapus agar riwayat tetap terjaga.',
+          isError: true,
         );
         return;
       }
 
       await _database.deleteById(
         'students',
-        (siswa['id'] as num).toInt(),
+        student['id'] as int,
       );
 
-      await _muatData();
-      _tampilkanPesan('Data siswa berhasil dihapus.');
+      await _loadData();
+
+      if (!mounted) return;
+
+      _showMessage('Data siswa berhasil dihapus.');
     } catch (e) {
-      _tampilkanPesan('Gagal menghapus siswa: $e');
+      _showMessage(
+        'Gagal menghapus data siswa: $e',
+        isError: true,
+      );
     }
   }
 
-  InputDecoration _dekorasiInput(String label, IconData icon) {
+  // ==========================================================
+  // KOMPONEN INPUT DAN PESAN
+  // ==========================================================
+
+  InputDecoration _inputDecoration(
+    String label,
+    IconData icon,
+  ) {
     return InputDecoration(
       labelText: label,
-      prefixIcon: Icon(icon, color: _primary),
+      prefixIcon: Icon(icon, color: primary),
       filled: true,
-      fillColor: _background,
+      fillColor: background,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide.none,
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey.shade200),
+        borderSide: BorderSide(
+          color: Colors.grey.shade200,
+        ),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: _primary),
+        borderSide: const BorderSide(
+          color: primary,
+          width: 1.5,
+        ),
       ),
     );
   }
 
-  void _tampilkanPesan(String pesan) {
+  void _showMessage(
+    String message, {
+    bool isError = false,
+  }) {
     if (!mounted) return;
 
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(pesan)));
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: isError ? Colors.redAccent : Colors.green,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
   }
+
+  // ==========================================================
+  // WIDGET PENCARIAN RESPONSIF
+  // ==========================================================
+
+  Widget _buildSearchBar() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bool compact = constraints.maxWidth < 380;
+
+        final searchField = TextField(
+          controller: _searchController,
+          decoration: InputDecoration(
+            hintText: 'Cari nama atau NIS...',
+            hintStyle: TextStyle(
+              fontSize: 13,
+              color: Colors.grey.shade500,
+            ),
+            prefixIcon: const Icon(
+              Icons.search,
+              color: primary,
+            ),
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 12,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide.none,
+            ),
+          ),
+        );
+
+        final addButton = SizedBox(
+          height: 48,
+          child: ElevatedButton.icon(
+            onPressed: () => _showStudentForm(),
+            icon: const Icon(Icons.add, size: 19),
+            label: Text(compact ? 'Tambah' : 'Tambah Siswa'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 12,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        );
+
+        // Di layar sempit, tombol ditempatkan di bawah
+        // pencarian supaya tidak memaksa lebar Row.
+        if (compact) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              searchField,
+              const SizedBox(height: 10),
+              Align(
+                alignment: Alignment.centerRight,
+                child: addButton,
+              ),
+            ],
+          );
+        }
+
+        return Row(
+          children: [
+            Expanded(child: searchField),
+            const SizedBox(width: 10),
+            addButton,
+          ],
+        );
+      },
+    );
+  }
+
+  // ==========================================================
+  // TAMPILAN UTAMA
+  // ==========================================================
 
   @override
   Widget build(BuildContext context) {
-    final siswaTampil = _siswaTerfilter;
+    final displayedStudents = _filteredStudents;
 
     return Scaffold(
-      backgroundColor: _background,
+      backgroundColor: background,
       appBar: AppBar(
         title: const Text(
           'Kelola Data Siswa',
           style: TextStyle(
-            color: _navy,
+            color: navy,
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
         ),
         backgroundColor: Colors.white,
-        foregroundColor: _navy,
+        foregroundColor: navy,
         elevation: 0,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
-          child: Container(color: Colors.grey.shade200, height: 1),
+          child: Container(
+            height: 1,
+            color: Colors.grey.shade200,
+          ),
         ),
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 18, 16, 12),
-            child: Column(
-              children: [
-                TextField(
-                  controller: _searchController,
-                  onChanged: (value) {
-                    setState(() => _kataKunci = value);
-                  },
-                  decoration: InputDecoration(
-                    hintText: 'Cari nama atau NIS siswa...',
-                    hintStyle: TextStyle(
-                      color: Colors.grey.shade400,
-                      fontSize: 13,
+      body: _isLoading
+          ? const Center(
+              child: CircularProgressIndicator(
+                color: primary,
+              ),
+            )
+          : RefreshIndicator(
+              onRefresh: _loadData,
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      16,
+                      20,
+                      16,
+                      12,
                     ),
-                    prefixIcon: const Icon(
-                      Icons.search,
-                      color: Colors.grey,
+                    child: _buildSearchBar(),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      20,
+                      4,
+                      20,
+                      12,
                     ),
-                    suffixIcon: _kataKunci.isNotEmpty
-                        ? IconButton(
-                            onPressed: () {
-                              _searchController.clear();
-                              setState(() => _kataKunci = '');
-                            },
-                            icon: const Icon(Icons.close),
-                          )
-                        : null,
-                    filled: true,
-                    fillColor: Colors.white,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
-                        color: Colors.grey.shade200,
-                      ),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
-                        color: Colors.grey.shade200,
-                      ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.people_alt_outlined,
+                          color: primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Data Siswa (${_students.length})',
+                            style: const TextStyle(
+                              color: navy,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        '${siswaTampil.length} siswa ditemukan',
-                        style: const TextStyle(
-                          color: _navy,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                    ElevatedButton.icon(
-                      onPressed: () => _bukaFormSiswa(),
-                      icon: const Icon(Icons.add, size: 18),
-                      label: const Text(
-                        'Tambah Siswa',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 13,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: _isLoading
-                ? const Center(
-                    child: CircularProgressIndicator(color: _primary),
-                  )
-                : siswaTampil.isEmpty
-                    ? _buildEmptyState()
-                    : RefreshIndicator(
-                        onRefresh: _muatData,
-                        child: ListView.builder(
-                          padding: const EdgeInsets.fromLTRB(
-                            16,
-                            4,
-                            16,
-                            20,
-                          ),
-                          itemCount: siswaTampil.length,
-                          itemBuilder: (context, index) {
-                            final siswa = siswaTampil[index];
-                            final nama = siswa['nama'].toString();
-                            final status = _statusSiswa(siswa);
-                            final warna = _warnaStatus(status);
-                            final poin =
-                                (siswa['total_poin'] as num?)?.toInt() ?? 0;
+                  Expanded(
+                    child: displayedStudents.isEmpty
+                        ? _buildEmptyState()
+                        : ListView.builder(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.fromLTRB(
+                              16,
+                              0,
+                              16,
+                              24,
+                            ),
+                            itemCount: displayedStudents.length,
+                            itemBuilder: (context, index) {
+                              final student = displayedStudents[index];
 
-                            return Container(
-                              margin: const EdgeInsets.only(bottom: 10),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: Colors.grey.shade100,
+                              final name = student['name']?.toString() ?? '-';
+                              final nis = student['nis']?.toString() ?? '-';
+
+                              return Container(
+                                margin: const EdgeInsets.only(
+                                  bottom: 12,
                                 ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(
-                                      alpha: 0.025,
-                                    ),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 3),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: Colors.grey.shade100,
                                   ),
-                                ],
-                              ),
-                              child: ListTile(
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 7,
-                                ),
-                                leading: CircleAvatar(
-                                  radius: 23,
-                                  backgroundColor: const Color(0xFFE8F1FF),
-                                  child: Text(
-                                    nama.isNotEmpty
-                                        ? nama[0].toUpperCase()
-                                        : '?',
-                                    style: const TextStyle(
-                                      color: _primary,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                title: Text(
-                                  nama,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: _navy,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                subtitle: Padding(
-                                  padding: const EdgeInsets.only(top: 5),
-                                  child: Text(
-                                    '${siswa['kelas'] ?? 'Belum ada kelas'}'
-                                    '\nNIS: ${siswa['nis']} • $poin poin',
-                                    style: TextStyle(
-                                      color: Colors.grey.shade600,
-                                      fontSize: 12,
-                                      height: 1.5,
-                                    ),
-                                  ),
-                                ),
-                                isThreeLine: true,
-                                trailing: PopupMenuButton<String>(
-                                  tooltip: 'Aksi siswa',
-                                  onSelected: (aksi) {
-                                    if (aksi == 'edit') {
-                                      _bukaFormSiswa(siswa: siswa);
-                                    } else if (aksi == 'hapus') {
-                                      _hapusSiswa(siswa);
-                                    }
-                                  },
-                                  itemBuilder: (context) => const [
-                                    PopupMenuItem(
-                                      value: 'edit',
-                                      child: Row(
-                                        children: [
-                                          Icon(Icons.edit_outlined),
-                                          SizedBox(width: 10),
-                                          Text('Edit'),
-                                        ],
-                                      ),
-                                    ),
-                                    PopupMenuItem(
-                                      value: 'hapus',
-                                      child: Row(
-                                        children: [
-                                          Icon(
-                                            Icons.delete_outline,
-                                            color: Colors.redAccent,
-                                          ),
-                                          SizedBox(width: 10),
-                                          Text('Hapus'),
-                                        ],
-                                      ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color:
+                                          Colors.black.withValues(alpha: 0.025),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 3),
                                     ),
                                   ],
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 9,
-                                          vertical: 6,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: warna.withValues(
-                                            alpha: 0.12,
-                                          ),
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                        ),
-                                        child: Text(
-                                          status,
-                                          style: TextStyle(
-                                            color: warna,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 10,
-                                          ),
+                                ),
+                                child: ListTile(
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 8,
+                                  ),
+                                  leading: CircleAvatar(
+                                    radius: 24,
+                                    backgroundColor: const Color(0xFFE8F1FF),
+                                    child: Text(
+                                      name.isNotEmpty
+                                          ? name[0].toUpperCase()
+                                          : '?',
+                                      style: const TextStyle(
+                                        color: primary,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 18,
+                                      ),
+                                    ),
+                                  ),
+                                  title: Text(
+                                    name,
+                                    style: const TextStyle(
+                                      color: navy,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  subtitle: Padding(
+                                    padding: const EdgeInsets.only(
+                                      top: 5,
+                                    ),
+                                    child: Text(
+                                      'NIS: $nis\n'
+                                      '${_className(student['class_id'])}',
+                                      style: TextStyle(
+                                        color: Colors.grey.shade600,
+                                        fontSize: 12,
+                                        height: 1.5,
+                                      ),
+                                    ),
+                                  ),
+                                  isThreeLine: true,
+                                  trailing: PopupMenuButton<String>(
+                                    tooltip: 'Aksi siswa',
+                                    onSelected: (value) {
+                                      if (value == 'edit') {
+                                        _showStudentForm(
+                                          student: student,
+                                        );
+                                      } else if (value == 'delete') {
+                                        _deleteStudent(student);
+                                      }
+                                    },
+                                    itemBuilder: (context) => const [
+                                      PopupMenuItem(
+                                        value: 'edit',
+                                        child: Row(
+                                          children: [
+                                            Icon(
+                                              Icons.edit_outlined,
+                                              size: 19,
+                                            ),
+                                            SizedBox(width: 10),
+                                            Text('Edit'),
+                                          ],
                                         ),
                                       ),
-                                      const SizedBox(height: 4),
-                                      const Icon(
-                                        Icons.more_horiz,
-                                        color: Colors.grey,
+                                      PopupMenuItem(
+                                        value: 'delete',
+                                        child: Row(
+                                          children: [
+                                            Icon(
+                                              Icons.delete_outline,
+                                              color: Colors.red,
+                                              size: 19,
+                                            ),
+                                            SizedBox(width: 10),
+                                            Text('Hapus'),
+                                          ],
+                                        ),
                                       ),
                                     ],
                                   ),
                                 ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-          ),
-        ],
-      ),
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            ),
     );
   }
 
   Widget _buildEmptyState() {
-    final pencarianAktif = _kataKunci.trim().isNotEmpty;
+    final bool noStudents = _students.isEmpty;
 
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(28),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              pencarianAktif
-                  ? Icons.search_off_rounded
-                  : Icons.people_outline_rounded,
-              size: 58,
-              color: Colors.grey.shade400,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              pencarianAktif ? 'Siswa tidak ditemukan' : 'Belum ada data siswa',
-              style: const TextStyle(
-                color: _navy,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              pencarianAktif
-                  ? 'Coba gunakan nama atau NIS yang berbeda.'
-                  : 'Tekan tombol Tambah Siswa untuk memasukkan data.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.grey.shade600,
-                fontSize: 13,
-              ),
-            ),
-            if (!pencarianAktif) ...[
-              const SizedBox(height: 16),
-              ElevatedButton.icon(
-                onPressed: () => _bukaFormSiswa(),
-                icon: const Icon(Icons.add),
-                label: const Text('Tambah Siswa'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _primary,
-                  foregroundColor: Colors.white,
-                ),
-              ),
-            ],
-          ],
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        const SizedBox(height: 65),
+        Icon(
+          noStudents ? Icons.school_outlined : Icons.search_off_rounded,
+          size: 70,
+          color: Colors.grey.shade300,
         ),
-      ),
+        const SizedBox(height: 16),
+        Center(
+          child: Text(
+            noStudents ? 'Belum ada data siswa' : 'Siswa tidak ditemukan',
+            style: const TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.bold,
+              color: navy,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 30),
+          child: Text(
+            noStudents
+                ? 'Tekan tombol Tambah untuk memasukkan '
+                    'data siswa ke database.'
+                : 'Coba gunakan nama atau NIS yang berbeda.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.grey.shade600,
+            ),
+          ),
+        ),
+        if (noStudents) ...[
+          const SizedBox(height: 20),
+          Center(
+            child: ElevatedButton.icon(
+              onPressed: () => _showStudentForm(),
+              icon: const Icon(Icons.add),
+              label: const Text('Tambah Siswa'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primary,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }
