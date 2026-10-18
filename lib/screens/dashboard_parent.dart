@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'notifikasi_parent_screen.dart';
 import 'riwayat_parent_screen.dart';
 import 'profil_parent_screen.dart';
+import 'detail_parent_alert_screen.dart';
 
 class DashboardParentScreen extends StatefulWidget {
   const DashboardParentScreen({super.key});
@@ -391,7 +392,13 @@ class _BerandaParentContent extends StatelessWidget {
                     height: 40,
                     child: ElevatedButton(
                       onPressed: () {
-                        // Nanti arahkan ke Detail Parent Alert
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                const DetailParentAlertScreen(),
+                          ),
+                        );
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF2C7DEB),
