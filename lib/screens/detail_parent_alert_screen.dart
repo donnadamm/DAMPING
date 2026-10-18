@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import '../core/constants/violation_rules.dart';
-import '../models/violation.dart';
 
 class DetailParentAlertScreen extends StatelessWidget {
   // Variabel penampung data (bisa diisi dinamis dari database nantinya)
