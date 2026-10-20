@@ -350,7 +350,9 @@ class _BerandaAdminContentState extends State<_BerandaAdminContent> {
                                     context,
                                     MaterialPageRoute(
                                       builder: (context) =>
-                                          const KelolaDataSiswaScreen(),
+                                          const KelolaPenggunaScreen(
+                                        initialFilter: 'Siswa',
+                                      ),
                                     ),
                                   ).then((_) => _loadDashboardData());
                                 },
@@ -369,7 +371,9 @@ class _BerandaAdminContentState extends State<_BerandaAdminContent> {
                                     context,
                                     MaterialPageRoute(
                                       builder: (context) =>
-                                          const KelolaPenggunaScreen(),
+                                          const KelolaPenggunaScreen(
+                                        initialFilter: 'Guru',
+                                      ),
                                     ),
                                   ).then((_) => _loadDashboardData());
                                 },
@@ -389,7 +393,9 @@ class _BerandaAdminContentState extends State<_BerandaAdminContent> {
                                     context,
                                     MaterialPageRoute(
                                       builder: (context) =>
-                                          const KelolaPenggunaScreen(),
+                                          const KelolaPenggunaScreen(
+                                        initialFilter: 'Orang Tua',
+                                      ),
                                     ),
                                   ).then((_) => _loadDashboardData());
                                 },
