@@ -1137,7 +1137,7 @@ class _KelolaDataSiswaScreenState extends State<KelolaDataSiswaScreen> {
             onPressed: () => _showStudentForm(),
             icon: const Icon(Icons.person_add_alt_1_rounded, size: 22),
             label: const Text(
-              'Tambah siswa secara manual',
+              'Tambah siswa',
               style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
             ),
             style: ElevatedButton.styleFrom(
@@ -1158,7 +1158,7 @@ class _KelolaDataSiswaScreenState extends State<KelolaDataSiswaScreen> {
             onPressed: _importStudentsCsv,
             icon: const Icon(Icons.upload_file_rounded, size: 21),
             label: const Text(
-              'Impor banyak siswa dari CSV',
+              'Impor CSV',
               style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
             ),
             style: OutlinedButton.styleFrom(
