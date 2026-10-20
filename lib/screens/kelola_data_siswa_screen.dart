@@ -120,253 +120,390 @@ class _KelolaDataSiswaScreenState extends State<KelolaDataSiswaScreen> {
   Future<void> _showStudentForm({
     Map<String, Object?>? student,
   }) async {
-    final bool isEditing = student != null;
+    if (!mounted) return;
 
+    final bool isEditing = student != null;
     final nisController = TextEditingController(
       text: student?['nis']?.toString() ?? '',
     );
     final nameController = TextEditingController(
       text: student?['name']?.toString() ?? '',
     );
+    final formKey = GlobalKey<FormState>();
+    bool isSaving = false;
 
-    int? selectedClassId =
-        student?['class_id'] is int ? student!['class_id'] as int : null;
-
-    if (selectedClassId != null &&
-        !_classes.any(
-          (item) => item['id'].toString() == selectedClassId.toString(),
-        )) {
-      selectedClassId = null;
+    int? parseId(Object? value) {
+      if (value is int) return value;
+      return int.tryParse(value?.toString() ?? '');
     }
 
-    final formKey = GlobalKey<FormState>();
+    int? selectedClassId;
 
     try {
-      await showDialog<void>(
+      final classData = await _database.getAll(
+        'classes',
+        orderBy: 'name ASC',
+      );
+      if (!mounted) return;
+
+      setState(() {
+        _classes = List<Map<String, Object?>>.from(classData);
+      });
+
+      selectedClassId = parseId(student?['class_id']);
+      final validIds =
+          _classes.map((item) => parseId(item['id'])).whereType<int>().toSet();
+      if (!validIds.contains(selectedClassId)) selectedClassId = null;
+
+      final saved = await showDialog<bool>(
         context: context,
         barrierDismissible: false,
         builder: (dialogContext) {
-          bool isSaving = false;
-
           return StatefulBuilder(
             builder: (context, setDialogState) {
-              return AlertDialog(
+              return Dialog(
                 backgroundColor: Colors.white,
+                insetPadding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 24,
+                ),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(22),
+                  borderRadius: BorderRadius.circular(26),
                 ),
-                title: Row(
-                  children: [
-                    Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE7F0FF),
-                        borderRadius: BorderRadius.circular(13),
-                      ),
-                      child: Icon(
-                        isEditing
-                            ? Icons.edit_rounded
-                            : Icons.person_add_alt_1_rounded,
-                        color: primary,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        isEditing ? 'Edit Data Siswa' : 'Tambah Siswa',
-                        style: const TextStyle(
-                          color: navy,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                content: SizedBox(
-                  width: MediaQuery.sizeOf(context).width * 0.78,
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 420),
-                    child: SingleChildScrollView(
-                      child: Form(
-                        key: formKey,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            TextFormField(
-                              controller: nisController,
-                              decoration: _inputDecoration(
-                                'Nomor Induk Siswa (NIS)',
-                                Icons.badge_outlined,
-                              ),
-                              textInputAction: TextInputAction.next,
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'NIS wajib diisi';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 15),
-                            TextFormField(
-                              controller: nameController,
-                              textCapitalization: TextCapitalization.words,
-                              textInputAction: TextInputAction.done,
-                              decoration: _inputDecoration(
-                                'Nama lengkap siswa',
-                                Icons.person_outline_rounded,
-                              ),
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'Nama siswa wajib diisi';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 15),
-                            DropdownButtonFormField<int?>(
-                              initialValue: selectedClassId,
-                              isExpanded: true,
-                              decoration: _inputDecoration(
-                                'Kelas',
-                                Icons.school_outlined,
-                              ),
-                              items: [
-                                const DropdownMenuItem<int?>(
-                                  value: null,
-                                  child: Text('Belum ditentukan'),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 460),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(22, 24, 22, 20),
+                    child: Form(
+                      key: formKey,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                width: 52,
+                                height: 52,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFE8F1FF),
+                                  borderRadius: BorderRadius.circular(16),
                                 ),
-                                ..._classes.map((item) {
-                                  return DropdownMenuItem<int?>(
-                                    value: item['id'] as int,
-                                    child: Text(
-                                      item['name'].toString(),
-                                      overflow: TextOverflow.ellipsis,
+                                child: Icon(
+                                  isEditing
+                                      ? Icons.edit_rounded
+                                      : Icons.person_add_alt_1_rounded,
+                                  color: primary,
+                                  size: 27,
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      isEditing
+                                          ? 'Edit Data Siswa'
+                                          : 'Tambah Siswa',
+                                      style: const TextStyle(
+                                        color: navy,
+                                        fontSize: 21,
+                                        fontWeight: FontWeight.w800,
+                                      ),
                                     ),
-                                  );
-                                }),
-                              ],
-                              onChanged: (value) {
-                                setDialogState(() {
-                                  selectedClassId = value;
-                                });
-                              },
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Isi informasi siswa pada kolom berikut.',
+                                      style: TextStyle(
+                                        color: Colors.blueGrey.shade600,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 24),
+                          const Text(
+                            'INFORMASI SISWA',
+                            style: TextStyle(
+                              color: navy,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.1,
                             ),
-                            if (_classes.isEmpty) ...[
-                              const SizedBox(height: 12),
-                              const Text(
-                                'Belum ada kelas. Kamu dapat menyimpan '
-                                'siswa tanpa kelas dan menambah kelas '
-                                'melalui menu Kelola Kelas.',
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: nisController,
+                            enabled: !isSaving,
+                            textInputAction: TextInputAction.next,
+                            decoration: _inputDecoration(
+                              'Nomor Induk Siswa (NIS)',
+                              Icons.badge_outlined,
+                            ).copyWith(
+                              hintText: 'Contoh: 2026001',
+                              filled: true,
+                              fillColor: const Color(0xFFF7F9FC),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'NIS wajib diisi';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 14),
+                          TextFormField(
+                            controller: nameController,
+                            enabled: !isSaving,
+                            textCapitalization: TextCapitalization.words,
+                            textInputAction: TextInputAction.done,
+                            decoration: _inputDecoration(
+                              'Nama lengkap siswa',
+                              Icons.person_outline_rounded,
+                            ).copyWith(
+                              hintText: 'Contoh: Andi Pratama',
+                              filled: true,
+                              fillColor: const Color(0xFFF7F9FC),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Nama siswa wajib diisi';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 14),
+                          DropdownButtonFormField<int?>(
+                            key: ValueKey(
+                              'student_class_${_classes.length}',
+                            ),
+                            initialValue: selectedClassId,
+                            isExpanded: true,
+                            decoration: _inputDecoration(
+                              'Pilih kelas',
+                              Icons.school_outlined,
+                            ).copyWith(
+                              filled: true,
+                              fillColor: const Color(0xFFF7F9FC),
+                            ),
+                            items: [
+                              const DropdownMenuItem<int?>(
+                                value: null,
+                                child: Text('Belum ditentukan'),
+                              ),
+                              ..._classes.map((item) {
+                                final id = parseId(item['id']);
+                                if (id == null) return null;
+                                return DropdownMenuItem<int?>(
+                                  value: id,
+                                  child: Text(
+                                    item['name']?.toString() ?? 'Tanpa nama',
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                );
+                              }).whereType<DropdownMenuItem<int?>>(),
+                            ],
+                            onChanged: isSaving
+                                ? null
+                                : (value) {
+                                    setDialogState(() {
+                                      selectedClassId = value;
+                                    });
+                                  },
+                          ),
+                          if (_classes.isEmpty) ...[
+                            const SizedBox(height: 10),
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFF7ED),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Text(
+                                'Belum ada data kelas. Kamu tetap dapat menyimpan '
+                                'siswa tanpa kelas, atau tambahkan data kelas melalui '
+                                'menu Kelola Kelas.',
                                 style: TextStyle(
-                                  color: Colors.deepOrange,
+                                  color: Color(0xFFB45309),
                                   fontSize: 12,
                                   height: 1.5,
                                 ),
                               ),
-                            ],
+                            ),
                           ],
-                        ),
+                          const SizedBox(height: 22),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton(
+                                  onPressed: isSaving
+                                      ? null
+                                      : () =>
+                                          Navigator.pop(dialogContext, false),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: navy,
+                                    minimumSize: const Size.fromHeight(48),
+                                    side: const BorderSide(
+                                      color: Color(0xFFD7E1EF),
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                  ),
+                                  child: const Text('Batal'),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                flex: 2,
+                                child: ElevatedButton.icon(
+                                  onPressed: isSaving
+                                      ? null
+                                      : () async {
+                                          if (!formKey.currentState!
+                                              .validate()) {
+                                            return;
+                                          }
+
+                                          setDialogState(() => isSaving = true);
+                                          try {
+                                            final nis =
+                                                nisController.text.trim();
+                                            final name =
+                                                nameController.text.trim();
+
+                                            final duplicate =
+                                                _students.any((item) {
+                                              final sameNis = item['nis']
+                                                      ?.toString()
+                                                      .trim()
+                                                      .toLowerCase() ==
+                                                  nis.toLowerCase();
+                                              final sameStudent = item['id']
+                                                      ?.toString() ==
+                                                  student?['id']?.toString();
+                                              return sameNis && !sameStudent;
+                                            });
+
+                                            if (duplicate) {
+                                              setDialogState(
+                                                  () => isSaving = false);
+                                              _showMessage(
+                                                'NIS tersebut sudah digunakan.',
+                                                isError: true,
+                                              );
+                                              return;
+                                            }
+
+                                            if (selectedClassId != null &&
+                                                !_classes.any((item) =>
+                                                    parseId(item['id']) ==
+                                                    selectedClassId)) {
+                                              setDialogState(
+                                                  () => isSaving = false);
+                                              _showMessage(
+                                                'Kelas tidak ditemukan. Pilih kelas kembali.',
+                                                isError: true,
+                                              );
+                                              return;
+                                            }
+
+                                            final values = <String, Object?>{
+                                              'nis': nis,
+                                              'name': name,
+                                              'class_id': selectedClassId,
+                                            };
+
+                                            if (isEditing) {
+                                              final id = parseId(student['id']);
+                                              if (id == null) {
+                                                throw Exception(
+                                                    'ID siswa tidak valid.');
+                                              }
+                                              await _database.updateById(
+                                                'students',
+                                                id,
+                                                values,
+                                              );
+                                            } else {
+                                              values['created_at'] =
+                                                  DateTime.now()
+                                                      .toIso8601String();
+                                              await _database.insert(
+                                                  'students', values);
+                                            }
+
+                                            if (!dialogContext.mounted) return;
+                                            Navigator.pop(dialogContext, true);
+                                          } catch (e) {
+                                            if (!dialogContext.mounted) return;
+                                            setDialogState(
+                                                () => isSaving = false);
+                                            _showMessage(
+                                              'Data gagal disimpan: $e',
+                                              isError: true,
+                                            );
+                                          }
+                                        },
+                                  icon: isSaving
+                                      ? const SizedBox(
+                                          width: 17,
+                                          height: 17,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white,
+                                          ),
+                                        )
+                                      : const Icon(Icons.check_rounded,
+                                          size: 20),
+                                  label: Text(
+                                    isSaving
+                                        ? 'Menyimpan...'
+                                        : isEditing
+                                            ? 'Simpan perubahan'
+                                            : 'Simpan siswa',
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: primary,
+                                    foregroundColor: Colors.white,
+                                    minimumSize: const Size.fromHeight(48),
+                                    elevation: 0,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                   ),
                 ),
-                actions: [
-                  TextButton(
-                    onPressed:
-                        isSaving ? null : () => Navigator.pop(dialogContext),
-                    child: const Text('Batal'),
-                  ),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: primary,
-                      foregroundColor: Colors.white,
-                    ),
-                    onPressed: isSaving
-                        ? null
-                        : () async {
-                            if (!formKey.currentState!.validate()) return;
-
-                            setDialogState(() => isSaving = true);
-
-                            try {
-                              final nis = nisController.text.trim();
-                              final name = nameController.text.trim();
-
-                              final duplicate = _students.any((item) {
-                                final sameNis =
-                                    item['nis'].toString().toLowerCase() ==
-                                        nis.toLowerCase();
-                                final sameStudent = item['id']?.toString() ==
-                                    student?['id']?.toString();
-                                return sameNis && !sameStudent;
-                              });
-
-                              if (duplicate) {
-                                setDialogState(() => isSaving = false);
-                                _showMessage(
-                                  'NIS tersebut sudah digunakan.',
-                                  isError: true,
-                                );
-                                return;
-                              }
-
-                              final values = <String, Object?>{
-                                'nis': nis,
-                                'name': name,
-                                'class_id': selectedClassId,
-                              };
-
-                              if (isEditing) {
-                                await _database.updateById(
-                                  'students',
-                                  student['id'] as int,
-                                  values,
-                                );
-                              } else {
-                                values['created_at'] =
-                                    DateTime.now().toIso8601String();
-                                await _database.insert('students', values);
-                              }
-
-                              if (!dialogContext.mounted) return;
-                              Navigator.pop(dialogContext);
-
-                              await _loadData();
-                              if (!mounted) return;
-
-                              _showMessage(
-                                isEditing
-                                    ? 'Data siswa berhasil diperbarui.'
-                                    : 'Siswa berhasil ditambahkan.',
-                              );
-                            } catch (e) {
-                              if (!dialogContext.mounted) return;
-                              setDialogState(() => isSaving = false);
-                              _showMessage(
-                                'Gagal menyimpan data siswa: $e',
-                                isError: true,
-                              );
-                            }
-                          },
-                    child: isSaving
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : Text(isEditing ? 'Simpan' : 'Tambah'),
-                  ),
-                ],
               );
             },
           );
         },
       );
+
+      if (saved == true && mounted) {
+        await _loadData();
+        if (!mounted) return;
+        _showMessage(
+          isEditing
+              ? 'Data siswa berhasil diperbarui.'
+              : 'Siswa berhasil ditambahkan.',
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        _showMessage('Gagal membuka formulir siswa: $e', isError: true);
+      }
     } finally {
       nisController.dispose();
       nameController.dispose();
@@ -449,35 +586,43 @@ class _KelolaDataSiswaScreenState extends State<KelolaDataSiswaScreen> {
         type: FileType.custom,
         allowedExtensions: ['csv'],
       );
-
       if (result.isEmpty) return;
 
       final selectedFile = result.first;
       final bytes = await selectedFile.readAsBytes();
+      String content = utf8.decode(bytes, allowMalformed: true);
+      content = content.replaceFirst('\uFEFF', '').trim();
 
-      String content = utf8.decode(
-        bytes,
-        allowMalformed: true,
-      );
+      if (content.isEmpty) {
+        _showMessage('File CSV kosong.', isError: true);
+        return;
+      }
 
-      content = content.replaceFirst('\uFEFF', '');
-
+      // Mendukung file CSV yang memakai koma maupun titik koma sebagai pemisah.
+      final firstLine = content.split(RegExp(r'\r?\n')).first;
+      final delimiter =
+          firstLine.split(';').length > firstLine.split(',').length ? ';' : ',';
       final rows = csv.decode(content);
 
       if (rows.length < 2) {
         _showMessage(
-          'CSV kosong atau tidak memiliki data siswa.',
+          'CSV belum berisi data siswa. Pastikan ada baris judul dan data.',
           isError: true,
         );
         return;
       }
 
-      String normalizeHeader(dynamic value) =>
-          value.toString().trim().toLowerCase().replaceAll('_', ' ');
+      String normalizeHeader(dynamic value) => value
+          .toString()
+          .replaceFirst('\uFEFF', '')
+          .trim()
+          .toLowerCase()
+          .replaceAll('_', ' ');
 
       final headers = rows.first.map(normalizeHeader).toList();
-
-      final nisIndex = headers.indexWhere((h) => h == 'nis');
+      final nisIndex = headers.indexWhere(
+        (h) => h == 'nis' || h == 'nomor induk siswa',
+      );
       final nameIndex = headers.indexWhere(
         (h) =>
             h == 'nama' ||
@@ -486,112 +631,317 @@ class _KelolaDataSiswaScreenState extends State<KelolaDataSiswaScreen> {
             h == 'student name',
       );
       final classIndex = headers.indexWhere(
-        (h) => h == 'kelas' || h == 'class',
+        (h) => h == 'kelas' || h == 'class' || h == 'nama kelas',
       );
 
       if (nisIndex == -1 || nameIndex == -1) {
         _showMessage(
-          'CSV harus memiliki kolom NIS dan Nama Siswa.',
+          'Judul kolom belum sesuai. CSV harus memiliki kolom NIS dan Nama Siswa.',
           isError: true,
         );
         return;
       }
 
-      final currentStudents = await _database.getAll(
-        'students',
-        orderBy: 'name ASC',
-      );
-
+      final currentStudents = await _database.getAll('students');
       final existingNis = currentStudents
-          .map(
-            (s) => s['nis'].toString().trim().toLowerCase(),
-          )
+          .map((item) => (item['nis'] ?? '').toString().trim().toLowerCase())
+          .where((value) => value.isNotEmpty)
           .toSet();
+      final seenNis = <String>{...existingNis};
 
-      final classIds = <String, int>{};
-      for (final item in _classes) {
-        classIds[item['name'].toString().trim().toLowerCase()] =
-            item['id'] as int;
-      }
-
-      int imported = 0;
-      int skipped = 0;
+      final prepared = <Map<String, String?>>[];
       final errors = <String>[];
+      final newClassesByKey = <String, String>{};
 
-      for (int i = 1; i < rows.length; i++) {
+      for (var i = 1; i < rows.length; i++) {
         final row = rows[i];
+        if (row.every((cell) => cell.toString().trim().isEmpty)) continue;
 
-        if (row.every((cell) => cell.toString().trim().isEmpty)) {
+        if (row.length <= nisIndex ||
+            row.length <= nameIndex ||
+            (classIndex != -1 && row.length <= classIndex)) {
+          errors.add('Baris ${i + 1}: kolom tidak lengkap.');
           continue;
         }
 
-        try {
-          if (row.length <= nisIndex ||
-              row.length <= nameIndex ||
-              (classIndex != -1 && row.length <= classIndex)) {
-            skipped++;
-            errors.add('Baris ${i + 1}: kolom tidak lengkap.');
-            continue;
-          }
+        final nis = row[nisIndex].toString().trim();
+        final name = row[nameIndex].toString().trim();
+        final className =
+            classIndex == -1 ? '' : row[classIndex].toString().trim();
 
-          final nis = row[nisIndex].toString().trim();
-          final name = row[nameIndex].toString().trim();
-          final className =
-              classIndex == -1 ? '' : row[classIndex].toString().trim();
+        if (nis.isEmpty || name.isEmpty) {
+          errors.add('Baris ${i + 1}: NIS dan nama wajib diisi.');
+          continue;
+        }
+        if (!seenNis.add(nis.toLowerCase())) {
+          errors.add('Baris ${i + 1}: NIS $nis sudah ada atau duplikat.');
+          continue;
+        }
 
-          if (nis.isEmpty || name.isEmpty) {
-            skipped++;
-            errors.add('Baris ${i + 1}: NIS dan nama wajib diisi.');
-            continue;
-          }
+        prepared.add(<String, String?>{
+          'nis': nis,
+          'name': name,
+          'className': className.isEmpty ? null : className,
+          'line': '${i + 1}',
+        });
 
-          if (existingNis.contains(nis.toLowerCase())) {
-            skipped++;
-            errors.add('Baris ${i + 1}: NIS $nis sudah terdaftar.');
-            continue;
-          }
-
-          int? classId;
-          if (className.isNotEmpty) {
-            classId = classIds[className.toLowerCase()];
-            if (classId == null) {
-              skipped++;
-              errors.add(
-                'Baris ${i + 1}: kelas "$className" belum terdaftar.',
-              );
-              continue;
-            }
-          }
-
-          await _database.insert(
-            'students',
-            <String, Object?>{
-              'nis': nis,
-              'name': name,
-              'class_id': classId,
-              'created_at': DateTime.now().toIso8601String(),
-            },
-          );
-
-          existingNis.add(nis.toLowerCase());
-          imported++;
-        } catch (_) {
-          skipped++;
-          errors.add('Baris ${i + 1}: gagal disimpan.');
+        if (className.isNotEmpty) {
+          newClassesByKey.putIfAbsent(className.toLowerCase(), () => className);
         }
       }
+
+      if (prepared.isEmpty) {
+        final detail = errors.take(4).join('\n');
+        _showMessage(
+          'Tidak ada data yang siap diimpor.${detail.isEmpty ? '' : '\n$detail'}',
+          isError: true,
+        );
+        return;
+      }
+
+      // Baca data kelas paling baru, bukan hanya cache tampilan.
+      final classRows = await _database.getAll('classes', orderBy: 'name ASC');
+      final classIds = <String, int>{};
+      for (final item in classRows) {
+        final id = int.tryParse(item['id'].toString());
+        final name = (item['name'] ?? '').toString().trim();
+        if (id != null && name.isNotEmpty) {
+          classIds[name.toLowerCase()] = id;
+        }
+      }
+
+      final classesToCreate = <String>[];
+      for (final entry in newClassesByKey.entries) {
+        if (!classIds.containsKey(entry.key)) {
+          classesToCreate.add(entry.value);
+        }
+      }
+
+      if (!mounted) return;
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(22),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.file_present_rounded, color: primary, size: 27),
+              SizedBox(width: 10),
+              Expanded(child: Text('Pratinjau Impor CSV')),
+            ],
+          ),
+          content: SizedBox(
+            width: MediaQuery.sizeOf(dialogContext).width * 0.78,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    selectedFile.name,
+                    style: const TextStyle(
+                      color: navy,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _importSummaryTile(
+                    Icons.check_circle_outline_rounded,
+                    '${prepared.length} siswa siap diimpor',
+                    const Color(0xFF15803D),
+                    const Color(0xFFECFDF3),
+                  ),
+                  const SizedBox(height: 8),
+                  _importSummaryTile(
+                    Icons.school_outlined,
+                    classesToCreate.isEmpty
+                        ? 'Semua kelas sudah terdaftar'
+                        : '${classesToCreate.length} kelas baru akan dibuat',
+                    const Color(0xFF1D4ED8),
+                    const Color(0xFFEFF6FF),
+                  ),
+                  if (classesToCreate.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      'Kelas baru: ${classesToCreate.join(', ')}',
+                      style: TextStyle(
+                        color: Colors.blueGrey.shade700,
+                        fontSize: 12,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                  if (errors.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    _importSummaryTile(
+                      Icons.info_outline_rounded,
+                      '${errors.length} baris akan dilewati karena data kosong atau NIS duplikat',
+                      const Color(0xFFB45309),
+                      const Color(0xFFFFF7ED),
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Contoh data',
+                    style: TextStyle(
+                      color: navy,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ...prepared.take(4).map((record) => Container(
+                        margin: const EdgeInsets.only(bottom: 7),
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF5F8FC),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE1EDFF),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(
+                                Icons.person_outline_rounded,
+                                size: 18,
+                                color: primary,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    record['name'] ?? '-',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: navy,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'NIS ${record['nis']}  •  ${record['className'] ?? 'Kelas belum diisi'}',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.blueGrey.shade600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      )),
+                  if (prepared.length > 4)
+                    Text(
+                      'dan ${prepared.length - 4} data lainnya...',
+                      style: TextStyle(
+                        color: Colors.blueGrey.shade600,
+                        fontSize: 12,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Batal'),
+            ),
+            ElevatedButton.icon(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              icon: const Icon(Icons.file_download_done_rounded, size: 18),
+              label: const Text('Impor sekarang'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primary,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+
+      int imported = 0;
+      int skippedDuringSave = 0;
+      final saveErrors = <String>[];
+      final db = await _database.database;
+
+      await db.transaction((txn) async {
+        // Ambil kelas lagi di dalam transaksi agar ID kelas selalu valid.
+        final latestClasses = await txn.query('classes');
+        final idsByName = <String, int>{};
+        for (final item in latestClasses) {
+          final id = int.tryParse(item['id'].toString());
+          final name = (item['name'] ?? '').toString().trim();
+          if (id != null && name.isNotEmpty) {
+            idsByName[name.toLowerCase()] = id;
+          }
+        }
+
+        // Kelas yang tertulis di CSV namun belum terdaftar akan dibuat otomatis.
+        for (final record in prepared) {
+          final className = record['className'];
+          if (className == null || className.isEmpty) continue;
+          final key = className.toLowerCase();
+          if (!idsByName.containsKey(key)) {
+            final id = await txn.insert('classes', <String, Object?>{
+              'name': className,
+              'created_at': DateTime.now().toIso8601String(),
+            });
+            idsByName[key] = id;
+          }
+        }
+
+        final latestStudents = await txn.query('students', columns: ['nis']);
+        final latestNis = latestStudents
+            .map((item) => (item['nis'] ?? '').toString().trim().toLowerCase())
+            .toSet();
+
+        for (final record in prepared) {
+          final nis = record['nis']!;
+          final name = record['name']!;
+          final className = record['className'];
+          if (!latestNis.add(nis.toLowerCase())) {
+            skippedDuringSave++;
+            saveErrors.add('NIS $nis ternyata sudah terdaftar.');
+            continue;
+          }
+
+          final classId =
+              className == null ? null : idsByName[className.toLowerCase()];
+          await txn.insert('students', <String, Object?>{
+            'nis': nis,
+            'name': name,
+            'class_id': classId,
+            'created_at': DateTime.now().toIso8601String(),
+          });
+          imported++;
+        }
+      });
 
       await _loadData();
       if (!mounted) return;
 
+      final skipped = errors.length + skippedDuringSave;
       final message = StringBuffer(
-        'Impor selesai: $imported siswa ditambahkan.',
+        'Impor selesai: $imported siswa berhasil ditambahkan.',
       );
-
+      if (classesToCreate.isNotEmpty) {
+        message.write(' ${classesToCreate.length} kelas baru dibuat.');
+      }
       if (skipped > 0) message.write(' $skipped baris dilewati.');
-      if (errors.isNotEmpty) {
-        message.write('\n${errors.take(3).join('\n')}');
-        if (errors.length > 3) message.write('\nDan kesalahan lainnya.');
+      final details = <String>[...errors, ...saveErrors];
+      if (details.isNotEmpty) {
+        message.write('\n${details.take(2).join('\n')}');
+        if (details.length > 2) message.write('\nDan kesalahan lainnya.');
       }
 
       _showMessage(
@@ -602,6 +952,39 @@ class _KelolaDataSiswaScreenState extends State<KelolaDataSiswaScreen> {
       if (!mounted) return;
       _showMessage('Gagal mengimpor CSV: $e', isError: true);
     }
+  }
+
+  Widget _importSummaryTile(
+    IconData icon,
+    String text,
+    Color foreground,
+    Color backgroundColor,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(11),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: foreground, size: 20),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                color: foreground,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   // ==========================================================
@@ -749,21 +1132,41 @@ class _KelolaDataSiswaScreenState extends State<KelolaDataSiswaScreen> {
 
         // Tombol tambah manual hanya ada di sini.
         SizedBox(
-          height: 54,
+          height: 52,
           child: ElevatedButton.icon(
             onPressed: () => _showStudentForm(),
-            icon: const Icon(Icons.add_rounded, size: 24),
+            icon: const Icon(Icons.person_add_alt_1_rounded, size: 22),
             label: const Text(
-              'Tambah Siswa',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              'Tambah siswa secara manual',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: primary,
               foregroundColor: Colors.white,
-              elevation: 2,
-              shadowColor: primary.withValues(alpha: 0.2),
+              elevation: 1,
+              shadowColor: primary.withValues(alpha: 0.15),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(15),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 9),
+        SizedBox(
+          height: 46,
+          child: OutlinedButton.icon(
+            onPressed: _importStudentsCsv,
+            icon: const Icon(Icons.upload_file_rounded, size: 21),
+            label: const Text(
+              'Impor banyak siswa dari CSV',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            ),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: primary,
+              backgroundColor: const Color(0xFFEFF6FF),
+              side: const BorderSide(color: Color(0xFFC8DCFA)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
               ),
             ),
           ),

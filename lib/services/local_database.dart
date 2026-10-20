@@ -21,7 +21,7 @@ class LocalDatabase {
 
     return openDatabase(
       path,
-      version: 1,
+      version: 2,
       onConfigure: (db) async {
         await db.execute('PRAGMA foreign_keys = ON');
       },
@@ -153,8 +153,39 @@ class LocalDatabase {
           CREATE INDEX idx_notifications_user
           ON notifications(user_id, is_read)
         ''');
+
+        // Kelas contoh agar formulir dan template CSV dapat langsung digunakan.
+        await _seedDefaultClasses(db);
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        // Database versi 1 sudah memiliki tabel classes, tetapi tabelnya bisa kosong.
+        if (oldVersion < 2) {
+          await _seedDefaultClasses(db);
+        }
       },
     );
+  }
+
+  Future<void> _seedDefaultClasses(Database db) async {
+    final existing = await db.query('classes', columns: ['id'], limit: 1);
+    if (existing.isNotEmpty) return;
+
+    final now = DateTime.now().toIso8601String();
+    const classNames = <String>[
+      'X-A',
+      'X-B',
+      'XI-A',
+      'XI-B',
+      'XII-A',
+      'XII-B',
+    ];
+
+    for (final className in classNames) {
+      await db.insert('classes', <String, Object?>{
+        'name': className,
+        'created_at': now,
+      });
+    }
   }
 
   Future<int> insert(
