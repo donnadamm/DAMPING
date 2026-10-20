@@ -350,9 +350,7 @@ class _BerandaAdminContentState extends State<_BerandaAdminContent> {
                                     context,
                                     MaterialPageRoute(
                                       builder: (context) =>
-                                          const KelolaPenggunaScreen(
-                                        initialFilter: 'Siswa',
-                                      ),
+                                          const KelolaDataSiswaScreen(),
                                     ),
                                   ).then((_) => _loadDashboardData());
                                 },
