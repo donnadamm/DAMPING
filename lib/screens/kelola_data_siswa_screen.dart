@@ -598,11 +598,13 @@ class _KelolaDataSiswaScreenState extends State<KelolaDataSiswaScreen> {
         return;
       }
 
-      // Mendukung file CSV yang memakai koma maupun titik koma sebagai pemisah.
+      // Mendukung file CSV dengan pemisah koma maupun titik koma.
       final firstLine = content.split(RegExp(r'\r?\n')).first;
+
       final delimiter =
           firstLine.split(';').length > firstLine.split(',').length ? ';' : ',';
-      final rows = csv.decode(content);
+
+      final List<List<dynamic>> rows = csv.decode(content);
 
       if (rows.length < 2) {
         _showMessage(
@@ -1041,6 +1043,62 @@ class _KelolaDataSiswaScreenState extends State<KelolaDataSiswaScreen> {
     }
   }
 
+  Future<void> _showExportOptions() async {
+    if (!mounted) return;
+
+    final format = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(24),
+        ),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text(
+                  'Ekspor Data Siswa',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.table_chart_rounded),
+                title: const Text('Ekspor CSV (.csv)'),
+                subtitle: const Text(
+                  'Simpan data siswa dalam format CSV',
+                ),
+                onTap: () {
+                  Navigator.pop(sheetContext, 'csv');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.close_rounded),
+                title: const Text('Batal'),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (!mounted || format == null) return;
+
+    if (format == 'csv') {
+      await _exportStudentsCsv();
+    }
+  }
+
   // ==========================================================
   // INPUT DAN PESAN
   // ==========================================================
@@ -1179,25 +1237,22 @@ class _KelolaDataSiswaScreenState extends State<KelolaDataSiswaScreen> {
   // MENU IMPOR DAN EKSPOR
   // ==========================================================
 
+  // ==========================================================
+// MENU TITIK TIGA: EKSPOR DATA SAJA
+// ==========================================================
+
   List<PopupMenuEntry<String>> _fileMenuItems() {
     return const [
-      PopupMenuItem<String>(
-        value: 'import',
-        child: Row(
-          children: [
-            Icon(Icons.file_upload_outlined, color: primary),
-            SizedBox(width: 12),
-            Text('Impor CSV'),
-          ],
-        ),
-      ),
       PopupMenuItem<String>(
         value: 'export',
         child: Row(
           children: [
-            Icon(Icons.file_download_outlined, color: primary),
+            Icon(
+              Icons.file_download_outlined,
+              color: primary,
+            ),
             SizedBox(width: 12),
-            Text('Ekspor CSV'),
+            Text('Ekspor data siswa'),
           ],
         ),
       ),
@@ -1229,14 +1284,15 @@ class _KelolaDataSiswaScreenState extends State<KelolaDataSiswaScreen> {
         elevation: 0,
         actions: [
           PopupMenuButton<String>(
-            tooltip: 'Impor atau ekspor data',
-            icon: const Icon(Icons.more_vert_rounded, color: navy),
+            tooltip: 'Ekspor data siswa',
+            icon: const Icon(
+              Icons.more_vert_rounded,
+              color: navy,
+            ),
             itemBuilder: (context) => _fileMenuItems(),
             onSelected: (value) async {
-              if (value == 'import') {
-                await _importStudentsCsv();
-              } else if (value == 'export') {
-                await _exportStudentsCsv();
+              if (value == 'export') {
+                await _showExportOptions();
               }
             },
           ),
