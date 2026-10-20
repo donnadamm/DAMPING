@@ -1,5 +1,8 @@
+import 'dart:convert';
+
+import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
-import 'package:damping_app/data/dummy_data.dart';
+import '../services/local_database.dart';
 
 class TambahPenggunaScreen extends StatefulWidget {
   const TambahPenggunaScreen({super.key});
@@ -12,7 +15,13 @@ class _TambahPenggunaScreenState extends State<TambahPenggunaScreen> {
   final _namaController = TextEditingController();
   final _hpController = TextEditingController();
   final _passwordController = TextEditingController();
+
   String _selectedRole = 'Guru';
+  bool _isSaving = false;
+  bool _obscurePassword = true;
+
+  static const Color primaryBlue = Color(0xFF2C7DEB);
+  static const Color headingBlue = Color(0xFF0C356A);
 
   @override
   void dispose() {
@@ -22,43 +31,116 @@ class _TambahPenggunaScreenState extends State<TambahPenggunaScreen> {
     super.dispose();
   }
 
-  void _simpanPengguna() {
-    if (_namaController.text.isEmpty ||
-        _hpController.text.isEmpty ||
-        _passwordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Nama, Nomor HP, dan Password wajib diisi!'),
-            backgroundColor: Colors.redAccent),
+  String _hashPassword(String password) {
+    // Hash SHA-256 untuk kebutuhan prototipe.
+    // Untuk aplikasi produksi, gunakan password hashing
+    // dengan salt dan algoritma khusus seperti Argon2id.
+    return sha256.convert(utf8.encode(password)).toString();
+  }
+
+  Future<void> _simpanPengguna() async {
+    if (_isSaving) return;
+
+    final nama = _namaController.text.trim();
+    final hp = _hpController.text.trim();
+    final password = _passwordController.text;
+
+    if (nama.isEmpty || hp.isEmpty || password.isEmpty) {
+      _showMessage(
+        'Nama, Nomor HP, dan Password wajib diisi!',
+        isError: true,
       );
       return;
     }
 
-    // Solusi: Data yang disimpan harus mencakup password, dan harus menyimpan role 'Admin'
-    Map<String, dynamic> newUser = {
-      'nama': _namaController.text.trim(),
-      'hp': _hpController.text.trim(),
-      'password': _passwordController.text.trim(),
-      'role':
-          _selectedRole == 'Guru' ? 'Guru - Wali Kelas (Baru)' : _selectedRole,
-    };
-
-    if (_selectedRole == 'Guru') {
-      DummyData.guru.add(newUser);
-    } else if (_selectedRole == 'Orang Tua') {
-      DummyData.orangTua.add(newUser);
-    } else if (_selectedRole == 'Admin') {
-      DummyData.admin
-          .add(newUser); // <-- Sekarang akun Admin berhasil tersimpan!
+    if (password.length < 6) {
+      _showMessage(
+        'Password minimal 6 karakter.',
+        isError: true,
+      );
+      return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-          content: Text('Pengguna berhasil ditambahkan!'),
-          backgroundColor: Colors.green),
-    );
+    if (hp.length < 8 || !RegExp(r'^[0-9+]+$').hasMatch(hp)) {
+      _showMessage(
+        'Masukkan nomor HP yang valid.',
+        isError: true,
+      );
+      return;
+    }
 
-    Navigator.pop(context, true);
+    // Nilai role harus sesuai dengan CHECK constraint SQLite.
+    final String roleDatabase;
+    switch (_selectedRole) {
+      case 'Guru':
+        roleDatabase = 'guru';
+        break;
+      case 'Orang Tua':
+        roleDatabase = 'orang_tua';
+        break;
+      case 'Admin':
+        roleDatabase = 'admin';
+        break;
+      default:
+        _showMessage('Role tidak valid.', isError: true);
+        return;
+    }
+
+    setState(() => _isSaving = true);
+
+    try {
+      await LocalDatabase.instance.insert('users', {
+        'name': nama,
+        'phone': hp,
+        'password_hash': _hashPassword(password),
+        'role': roleDatabase,
+        'is_active': 1,
+        'created_at': DateTime.now().toIso8601String(),
+      });
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Pengguna berhasil ditambahkan!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      // Memberi tahu halaman sebelumnya agar memuat ulang data.
+      Navigator.pop(context, true);
+    } catch (e) {
+      if (!mounted) return;
+
+      final errorText = e.toString().toLowerCase();
+
+      if (errorText.contains('unique constraint') ||
+          errorText.contains('constraint failed: users.phone')) {
+        _showMessage(
+          'Nomor HP sudah terdaftar. Gunakan nomor lain.',
+          isError: true,
+        );
+      } else {
+        debugPrint('Gagal menyimpan pengguna: $e');
+        _showMessage(
+          'Pengguna gagal disimpan. Periksa koneksi database.',
+          isError: true,
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
+  }
+
+  void _showMessage(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.redAccent : Colors.green,
+      ),
+    );
   }
 
   @override
@@ -66,43 +148,69 @@ class _TambahPenggunaScreenState extends State<TambahPenggunaScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Tambah Pengguna',
-            style: TextStyle(
-                color: Color(0xFF0C356A),
-                fontSize: 18,
-                fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Tambah Pengguna',
+          style: TextStyle(
+            color: headingBlue,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF0C356A),
+        foregroundColor: headingBlue,
         elevation: 0,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
-          child: Container(color: Colors.grey.shade200, height: 1),
+          child: Container(
+            color: Colors.grey.shade200,
+            height: 1,
+          ),
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildLabel('Nama Lengkap *'),
             _buildTextField(
-                controller: _namaController,
-                hint: 'Masukkan nama lengkap',
-                icon: Icons.person_outline),
+              controller: _namaController,
+              hint: 'Masukkan nama lengkap',
+              icon: Icons.person_outline,
+            ),
             const SizedBox(height: 20),
             _buildLabel('Nomor HP *'),
             _buildTextField(
-                controller: _hpController,
-                hint: '081xxxxxxxxxx',
-                icon: Icons.phone_outlined,
-                isNumber: true),
+              controller: _hpController,
+              hint: '081xxxxxxxxxx',
+              icon: Icons.phone_outlined,
+              isNumber: true,
+            ),
             const SizedBox(height: 20),
             _buildLabel('Password *'),
             _buildTextField(
-                controller: _passwordController,
-                hint: 'Minimal 6 karakter',
-                icon: Icons.lock_outline,
-                isObscure: true),
+              controller: _passwordController,
+              hint: 'Minimal 6 karakter',
+              icon: Icons.lock_outline,
+              isObscure: _obscurePassword,
+              suffixIcon: IconButton(
+                tooltip: _obscurePassword
+                    ? 'Tampilkan password'
+                    : 'Sembunyikan password',
+                icon: Icon(
+                  _obscurePassword
+                      ? Icons.visibility_outlined
+                      : Icons.visibility_off_outlined,
+                  color: Colors.grey.shade500,
+                  size: 20,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _obscurePassword = !_obscurePassword;
+                  });
+                },
+              ),
+            ),
             const SizedBox(height: 20),
             _buildLabel('Role *'),
             Container(
@@ -116,30 +224,44 @@ class _TambahPenggunaScreenState extends State<TambahPenggunaScreen> {
                 child: DropdownButton<String>(
                   value: _selectedRole,
                   isExpanded: true,
-                  icon: const Icon(Icons.keyboard_arrow_down_rounded,
-                      color: Color(0xFF2C7DEB)),
-                  items: ['Guru', 'Orang Tua', 'Admin'].map((String role) {
+                  icon: const Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    color: primaryBlue,
+                  ),
+                  items: ['Guru', 'Orang Tua', 'Admin'].map((role) {
+                    final icon = role == 'Guru'
+                        ? Icons.school_outlined
+                        : role == 'Orang Tua'
+                            ? Icons.family_restroom
+                            : Icons.admin_panel_settings_outlined;
+
                     return DropdownMenuItem<String>(
                       value: role,
                       child: Row(
                         children: [
                           Icon(
-                            role == 'Guru'
-                                ? Icons.school_outlined
-                                : role == 'Orang Tua'
-                                    ? Icons.family_restroom
-                                    : Icons.admin_panel_settings_outlined,
-                            color: const Color(0xFF2C7DEB),
+                            icon,
+                            color: primaryBlue,
                             size: 20,
                           ),
                           const SizedBox(width: 12),
-                          Text(role, style: const TextStyle(fontSize: 14)),
+                          Text(
+                            role,
+                            style: const TextStyle(fontSize: 14),
+                          ),
                         ],
                       ),
                     );
                   }).toList(),
-                  onChanged: (newValue) =>
-                      setState(() => _selectedRole = newValue!),
+                  onChanged: _isSaving
+                      ? null
+                      : (newValue) {
+                          if (newValue != null) {
+                            setState(() {
+                              _selectedRole = newValue;
+                            });
+                          }
+                        },
                 ),
               ),
             ),
@@ -147,19 +269,27 @@ class _TambahPenggunaScreenState extends State<TambahPenggunaScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                  color: const Color(0xFFE8F1FF),
-                  borderRadius: BorderRadius.circular(12)),
+                color: const Color(0xFFE8F1FF),
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: const Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.info_outline_rounded,
-                      color: Color(0xFF2C7DEB), size: 20),
+                  Icon(
+                    Icons.info_outline_rounded,
+                    color: primaryBlue,
+                    size: 20,
+                  ),
                   SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Untuk orang tua, pastikan sudah terdaftar sebagai wali dari siswa.',
+                      'Untuk orang tua, pastikan sudah terdaftar '
+                      'sebagai wali dari siswa.',
                       style: TextStyle(
-                          color: Color(0xFF1E56A0), fontSize: 12, height: 1.4),
+                        color: Color(0xFF1E56A0),
+                        fontSize: 12,
+                        height: 1.4,
+                      ),
                     ),
                   ),
                 ],
@@ -170,17 +300,31 @@ class _TambahPenggunaScreenState extends State<TambahPenggunaScreen> {
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                onPressed: _simpanPengguna,
+                onPressed: _isSaving ? null : _simpanPengguna,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2C7DEB),
+                  backgroundColor: primaryBlue,
+                  disabledBackgroundColor: Colors.blue.shade200,
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
-                child: const Text('Simpan Pengguna',
-                    style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white)),
+                child: _isSaving
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text(
+                        'Simpan Pengguna',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
               ),
             ),
           ],
@@ -191,36 +335,55 @@ class _TambahPenggunaScreenState extends State<TambahPenggunaScreen> {
 
   Widget _buildLabel(String text) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: Text(text,
-          style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
-              color: Color(0xFF0C356A))),
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 13,
+          color: headingBlue,
+        ),
+      ),
     );
   }
 
-  Widget _buildTextField(
-      {required TextEditingController controller,
-      required String hint,
-      required IconData icon,
-      bool isNumber = false,
-      bool isObscure = false}) {
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String hint,
+    required IconData icon,
+    bool isNumber = false,
+    bool isObscure = false,
+    Widget? suffixIcon,
+  }) {
     return TextField(
       controller: controller,
       keyboardType: isNumber ? TextInputType.phone : TextInputType.text,
       obscureText: isObscure,
+      enabled: !_isSaving,
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
-        prefixIcon: Icon(icon, color: Colors.grey.shade400, size: 20),
+        hintStyle: TextStyle(
+          color: Colors.grey.shade400,
+          fontSize: 13,
+        ),
+        prefixIcon: Icon(
+          icon,
+          color: Colors.grey.shade400,
+          size: 20,
+        ),
+        suffixIcon: suffixIcon,
         contentPadding: const EdgeInsets.symmetric(vertical: 16),
         enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.grey.shade300)),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
         focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFF2C7DEB), width: 1.5)),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(
+            color: primaryBlue,
+            width: 1.5,
+          ),
+        ),
       ),
     );
   }
