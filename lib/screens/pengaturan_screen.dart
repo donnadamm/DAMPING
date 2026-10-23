@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'kelola_jenis_pelanggaran_screen.dart';
+
 class PengaturanScreen extends StatefulWidget {
   const PengaturanScreen({super.key});
 
@@ -8,17 +10,20 @@ class PengaturanScreen extends StatefulWidget {
 }
 
 class _PengaturanScreenState extends State<PengaturanScreen> {
+  static const Color primaryBlue = Color(0xFF2C7DEB);
+  static const Color deepBlue = Color(0xFF0C356A);
+  static const Color backgroundColor = Color(0xFFF8FAFC);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: backgroundColor,
       appBar: AppBar(
-        automaticallyImplyLeading:
-            false, // Dihilangkan karena bagian dari Bottom Navigation
+        automaticallyImplyLeading: false,
         title: const Text(
-          'Atur Batas SP',
+          'Pengaturan',
           style: TextStyle(
-            color: Color(0xFF0C356A),
+            color: deepBlue,
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
@@ -27,25 +32,115 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
         elevation: 0,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
-          child: Container(color: Colors.grey.shade200, height: 1),
+          child: Container(
+            color: Colors.grey.shade200,
+            height: 1,
+          ),
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // MENU KELOLA JENIS PELANGGARAN
+            const Text(
+              'Pengelolaan Data',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: deepBlue,
+              ),
+            ),
+            const SizedBox(height: 14),
+
+            Material(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          const KelolaJenisPelanggaranScreen(),
+                    ),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Colors.grey.shade200,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: primaryBlue.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.rule_folder_outlined,
+                          color: primaryBlue,
+                          size: 26,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Kelola Jenis Pelanggaran',
+                              style: TextStyle(
+                                color: deepBlue,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            SizedBox(height: 5),
+                            Text(
+                              'Tambah jenis pelanggaran, atur kategori, '
+                              'bobot poin, dan SP langsung.',
+                              style: TextStyle(
+                                color: Colors.black54,
+                                fontSize: 12,
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Icon(
+                        Icons.chevron_right,
+                        color: Colors.grey,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 28),
+
+            // PENGATURAN BATAS SP
             const Text(
               'Rentang Skor & Status',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF0C356A),
+                color: deepBlue,
               ),
             ),
             const SizedBox(height: 16),
 
-            // List Batas SP
             _buildSpLimitItem('Normal', '0 - 20', Colors.green),
             _buildSpLimitItem('SP 1', '21 - 40', Colors.orange),
             _buildSpLimitItem('SP 2', '41 - 70', Colors.redAccent),
@@ -53,7 +148,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
 
             const SizedBox(height: 24),
 
-            // Info Box
+            // INFORMASI BATAS SP
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -63,22 +158,30 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
               child: const Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.info_outline_rounded,
-                      color: Color(0xFF2C7DEB), size: 20),
+                  Icon(
+                    Icons.info_outline_rounded,
+                    color: primaryBlue,
+                    size: 20,
+                  ),
                   SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Anda dapat mengubah batas skor sesuai kebijakan sekolah. Sistem akan otomatis memperbarui status SP siswa berdasarkan poin ini.',
+                      'Batas skor dapat disesuaikan dengan kebijakan '
+                      'sekolah. Pastikan rentang skor tidak tumpang tindih.',
                       style: TextStyle(
-                          color: Color(0xFF1E56A0), fontSize: 12, height: 1.4),
+                        color: Color(0xFF1E56A0),
+                        fontSize: 12,
+                        height: 1.4,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
+
             const SizedBox(height: 32),
 
-            // Tombol Simpan
+            // TOMBOL SIMPAN BATAS SP
             SizedBox(
               width: double.infinity,
               height: 50,
@@ -86,22 +189,26 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                 onPressed: () {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('Perubahan batas SP berhasil disimpan!'),
-                      backgroundColor: Colors.green,
+                      content: Text(
+                        'Pengaturan batas SP saat ini belum '
+                        'terhubung ke database.',
+                      ),
                     ),
                   );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2C7DEB),
+                  backgroundColor: primaryBlue,
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 child: const Text(
                   'Simpan Perubahan',
                   style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white),
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ),
@@ -111,15 +218,20 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
     );
   }
 
-  // WIDGET BANTUAN: Item Rentang Skor SP
-  Widget _buildSpLimitItem(String status, String range, Color color) {
+  Widget _buildSpLimitItem(
+    String status,
+    String range,
+    Color color,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(
+          color: Colors.grey.shade200,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.02),
@@ -129,7 +241,6 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
         ],
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Container(
             width: 80,
@@ -142,7 +253,10 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
             child: Text(
               status,
               style: TextStyle(
-                  color: color, fontWeight: FontWeight.bold, fontSize: 13),
+                color: color,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
             ),
           ),
           Expanded(
@@ -152,15 +266,16 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF0C356A),
+                  color: deepBlue,
                 ),
               ),
             ),
           ),
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.edit_outlined, color: Colors.grey, size: 20),
-          )
+          const Icon(
+            Icons.info_outline,
+            color: Colors.grey,
+            size: 20,
+          ),
         ],
       ),
     );
