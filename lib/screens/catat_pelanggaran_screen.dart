@@ -403,7 +403,7 @@ class _CatatPelanggaranScreenState extends State<CatatPelanggaranScreen> {
                     controller: _poinController,
                     readOnly: true,
                     decoration: _inputDecoration(
-                      hintText: 'Terisi otomatis',
+                      hintText: '',
                       filled: true,
                       fillColor: const Color(0xFFF8FAFC),
                     ),
