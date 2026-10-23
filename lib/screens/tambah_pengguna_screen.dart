@@ -20,8 +20,49 @@ class _TambahPenggunaScreenState extends State<TambahPenggunaScreen> {
   bool _isSaving = false;
   bool _obscurePassword = true;
 
+  List<Map<String, dynamic>> _students = [];
+  int? _selectedStudentId;
+  bool _isLoadingStudents = false;
+
   static const Color primaryBlue = Color(0xFF2C7DEB);
   static const Color headingBlue = Color(0xFF0C356A);
+
+  @override
+  @override
+  void initState() {
+    super.initState();
+    _loadStudents();
+  }
+
+  Future<void> _loadStudents() async {
+    if (mounted) {
+      setState(() => _isLoadingStudents = true);
+    }
+
+    try {
+      final data = await LocalDatabase.instance.getAll(
+        'students',
+        orderBy: 'name ASC',
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _students = data;
+        _isLoadingStudents = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() => _isLoadingStudents = false);
+      debugPrint('Gagal memuat daftar siswa: $e');
+
+      _showMessage(
+        'Daftar siswa gagal dimuat.',
+        isError: true,
+      );
+    }
+  }
 
   @override
   void dispose() {
@@ -86,6 +127,32 @@ class _TambahPenggunaScreenState extends State<TambahPenggunaScreen> {
         return;
     }
 
+    if (_selectedRole == 'Orang Tua') {
+      if (_isLoadingStudents) {
+        _showMessage(
+          'Tunggu sampai daftar siswa selesai dimuat.',
+          isError: true,
+        );
+        return;
+      }
+
+      if (_students.isEmpty) {
+        _showMessage(
+          'Belum ada data siswa. Tambahkan siswa terlebih dahulu.',
+          isError: true,
+        );
+        return;
+      }
+
+      if (_selectedStudentId == null) {
+        _showMessage(
+          'Pilih siswa yang menjadi anak dari orang tua ini.',
+          isError: true,
+        );
+        return;
+      }
+    }
+
     setState(() => _isSaving = true);
 
     try {
@@ -94,6 +161,7 @@ class _TambahPenggunaScreenState extends State<TambahPenggunaScreen> {
         'phone': hp,
         'password_hash': _hashPassword(password),
         'role': roleDatabase,
+        'student_id': roleDatabase == 'orang_tua' ? _selectedStudentId : null,
         'is_active': 1,
         'created_at': DateTime.now().toIso8601String(),
       });
@@ -259,12 +327,97 @@ class _TambahPenggunaScreenState extends State<TambahPenggunaScreen> {
                           if (newValue != null) {
                             setState(() {
                               _selectedRole = newValue;
+                              _selectedStudentId = null;
                             });
                           }
                         },
                 ),
               ),
             ),
+            if (_selectedRole == 'Orang Tua') ...[
+              const SizedBox(height: 20),
+              _buildLabel('Pilih Siswa *'),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: _isLoadingStudents
+                    ? const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        child: Row(
+                          children: [
+                            SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: primaryBlue,
+                              ),
+                            ),
+                            SizedBox(width: 12),
+                            Text('Memuat daftar siswa...'),
+                          ],
+                        ),
+                      )
+                    : _students.isEmpty
+                        ? const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 16),
+                            child: Text(
+                              'Belum ada siswa terdaftar.',
+                              style: TextStyle(
+                                color: Colors.redAccent,
+                                fontSize: 13,
+                              ),
+                            ),
+                          )
+                        : DropdownButtonHideUnderline(
+                            child: DropdownButton<int>(
+                              value: _students.any(
+                                (student) =>
+                                    student['id'] == _selectedStudentId,
+                              )
+                                  ? _selectedStudentId
+                                  : null,
+                              isExpanded: true,
+                              hint: const Text(
+                                'Pilih siswa yang menjadi anak',
+                                style: TextStyle(fontSize: 13),
+                              ),
+                              icon: const Icon(
+                                Icons.keyboard_arrow_down_rounded,
+                                color: primaryBlue,
+                              ),
+                              items: _students.map((student) {
+                                final id = student['id'] as int;
+                                final namaSiswa =
+                                    student['name']?.toString() ?? 'Tanpa nama';
+                                final nis = student['nis']?.toString() ?? '';
+
+                                return DropdownMenuItem<int>(
+                                  value: id,
+                                  child: Text(
+                                    nis.isEmpty
+                                        ? namaSiswa
+                                        : '$namaSiswa ($nis)',
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontSize: 13),
+                                  ),
+                                );
+                              }).toList(),
+                              onChanged: _isSaving
+                                  ? null
+                                  : (id) {
+                                      setState(() {
+                                        _selectedStudentId = id;
+                                      });
+                                    },
+                            ),
+                          ),
+              ),
+            ],
             const SizedBox(height: 20),
             Container(
               padding: const EdgeInsets.all(16),
