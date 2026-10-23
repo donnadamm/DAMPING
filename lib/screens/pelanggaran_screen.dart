@@ -101,14 +101,6 @@ class _PelanggaranScreenState extends State<PelanggaranScreen> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        actions: [
-          IconButton(
-            onPressed: () {
-              // Nanti diarahkan ke halaman catat pelanggaran
-            },
-            icon: const Icon(Icons.add),
-          ),
-        ],
       ),
 
       body: Column(
