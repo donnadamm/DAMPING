@@ -21,7 +21,7 @@ class LocalDatabase {
 
     return openDatabase(
       path,
-      version: 2,
+      version: 3,
       onConfigure: (db) async {
         await db.execute('PRAGMA foreign_keys = ON');
       },
@@ -140,6 +140,11 @@ class LocalDatabase {
         ''');
 
         await db.execute('''
+          CREATE INDEX idx_users_student_id
+          ON users(student_id)
+          ''');
+
+        await db.execute('''
           CREATE INDEX idx_violations_student
           ON violations(student_id)
         ''');
@@ -158,9 +163,15 @@ class LocalDatabase {
         await _seedDefaultClasses(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
-        // Database versi 1 sudah memiliki tabel classes, tetapi tabelnya bisa kosong.
         if (oldVersion < 2) {
           await _seedDefaultClasses(db);
+        }
+
+        if (oldVersion < 3) {
+          await db.execute('''
+      CREATE INDEX IF NOT EXISTS idx_users_student_id
+      ON users(student_id)
+    ''');
         }
       },
     );
