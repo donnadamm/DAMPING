@@ -27,14 +27,18 @@ class _CatatPelanggaranScreenState extends State<CatatPelanggaranScreen> {
 
   Map<String, Object?>? get _selectedStudent {
     for (final student in _students) {
-      if (student['id'] == _selectedStudentId) return student;
+      if (student['id'] == _selectedStudentId) {
+        return student;
+      }
     }
     return null;
   }
 
   Map<String, Object?>? get _selectedViolation {
     for (final item in _jenisPelanggaran) {
-      if (item['id'] == _selectedViolationTypeId) return item;
+      if (item['id'] == _selectedViolationTypeId) {
+        return item;
+      }
     }
     return null;
   }
@@ -52,20 +56,35 @@ class _CatatPelanggaranScreenState extends State<CatatPelanggaranScreen> {
     super.dispose();
   }
 
+  // Memuat data siswa dan jenis pelanggaran dari database.
+  // Jenis pelanggaran dengan nama dan kategori sama ditampilkan satu kali.
   Future<void> _loadFormData() async {
     try {
-      final students = await _database.getAll(
+      final db = await _database.database;
+
+      final students = await db.query(
         'students',
-        orderBy: 'name ASC',
+        orderBy: 'name COLLATE NOCASE ASC',
       );
 
-      final db = await _database.database;
-      final types = await db.query(
-        'violation_types',
-        where: 'is_active = ?',
-        whereArgs: [1],
-        orderBy: 'category ASC, name ASC',
-      );
+      final types = await db.rawQuery('''
+        SELECT
+          MIN(id) AS id,
+          MIN(name) AS name,
+          MIN(category) AS category,
+          MIN(points) AS points,
+          MIN(direct_sp) AS direct_sp,
+          MIN(description) AS description,
+          MAX(is_active) AS is_active
+        FROM violation_types
+        WHERE is_active = 1
+        GROUP BY
+          LOWER(TRIM(name)),
+          LOWER(TRIM(category))
+        ORDER BY
+          MIN(category) COLLATE NOCASE ASC,
+          MIN(name) COLLATE NOCASE ASC
+      ''');
 
       if (!mounted) return;
 
@@ -73,16 +92,36 @@ class _CatatPelanggaranScreenState extends State<CatatPelanggaranScreen> {
         _students = students;
         _jenisPelanggaran = types;
         _isLoading = false;
+
+        // Pastikan pilihan lama masih tersedia setelah data dimuat.
+        if (!_students.any(
+          (item) => item['id'] == _selectedStudentId,
+        )) {
+          _selectedStudentId = null;
+        }
+
+        if (!_jenisPelanggaran.any(
+          (item) => item['id'] == _selectedViolationTypeId,
+        )) {
+          _selectedViolationTypeId = null;
+          _poinController.clear();
+        }
       });
     } catch (e) {
       if (!mounted) return;
 
       setState(() => _isLoading = false);
-      _showMessage('Gagal memuat data formulir: $e', isError: true);
+      _showMessage(
+        'Gagal memuat data formulir: $e',
+        isError: true,
+      );
     }
   }
 
-  void _showMessage(String message, {bool isError = false}) {
+  void _showMessage(
+    String message, {
+    bool isError = false,
+  }) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
@@ -120,71 +159,96 @@ class _CatatPelanggaranScreenState extends State<CatatPelanggaranScreen> {
     final student = _selectedStudent;
     if (student == null) return;
 
-    final db = await _database.database;
-    final history = await db.rawQuery('''
-      SELECT violation_name, points, occurred_at, sp_status, status
-      FROM violations
-      WHERE student_id = ?
-      ORDER BY occurred_at DESC, id DESC
-      LIMIT 5
-    ''', [student['id']]);
+    try {
+      final db = await _database.database;
 
-    if (!mounted) return;
+      final history = await db.rawQuery(
+        '''
+        SELECT violation_name, points, occurred_at, sp_status, status
+        FROM violations
+        WHERE student_id = ?
+        ORDER BY occurred_at DESC, id DESC
+        LIMIT 5
+        ''',
+        [student['id']],
+      );
 
-    final total = history.fold<int>(
-      0,
-      (sum, row) => sum + ((row['points'] as num?)?.toInt() ?? 0),
-    );
+      if (!mounted) return;
 
-    showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(student['name'].toString()),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('NIS: ${student['nis'] ?? '-'}'),
-            Text('ID siswa: ${student['id']}'),
-            const SizedBox(height: 12),
-            Text('Total poin dari 5 catatan terbaru: $total'),
-            const SizedBox(height: 12),
-            const Text(
-              'Riwayat pelanggaran terbaru',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 6),
-            if (history.isEmpty)
-              const Text('Belum ada riwayat pelanggaran.')
-            else
-              ...history.map(
-                (row) => Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
-                  child: Text(
-                    '• ${row['violation_name']} '
-                    '(+${row['points']} poin)',
-                  ),
+      final total = history.fold<int>(
+        0,
+        (sum, row) => sum + ((row['points'] as num?)?.toInt() ?? 0),
+      );
+
+      showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(student['name'].toString()),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('NIS: ${student['nis'] ?? '-'}'),
+                Text('ID siswa: ${student['id']}'),
+                const SizedBox(height: 12),
+                Text(
+                  'Total poin dari 5 catatan terbaru: $total',
                 ),
-              ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Riwayat pelanggaran terbaru',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 6),
+                if (history.isEmpty)
+                  const Text(
+                    'Belum ada riwayat pelanggaran.',
+                  )
+                else
+                  ...history.map(
+                    (row) => Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Text(
+                        '• ${row['violation_name']} '
+                        '(+${row['points']} poin)\n'
+                        'Tanggal: ${row['occurred_at'] ?? '-'}\n'
+                        'Status: ${row['sp_status'] ?? 'Normal'}',
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Tutup'),
+            ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Tutup'),
-          ),
-        ],
-      ),
-    );
+      );
+    } catch (e) {
+      if (mounted) {
+        _showMessage(
+          'Gagal memuat riwayat siswa: $e',
+          isError: true,
+        );
+      }
+    }
   }
 
   Future<void> _simpanPelanggaran() async {
     if (_selectedStudentId == null) {
-      _showMessage('Pilih siswa terlebih dahulu.', isError: true);
+      _showMessage(
+        'Pilih siswa terlebih dahulu.',
+        isError: true,
+      );
       return;
     }
 
     final jenis = _selectedViolation;
+
     if (jenis == null) {
       _showMessage(
         'Pilih jenis pelanggaran terlebih dahulu.',
@@ -193,17 +257,25 @@ class _CatatPelanggaranScreenState extends State<CatatPelanggaranScreen> {
       return;
     }
 
-    if (_poinController.text.isEmpty) {
-      _showMessage('Poin pelanggaran belum tersedia.', isError: true);
+    final rawPoints = jenis['points'];
+    if (rawPoints == null || rawPoints is! num) {
+      _showMessage(
+        'Poin jenis pelanggaran tidak valid.',
+        isError: true,
+      );
       return;
     }
+
+    if (_isSaving) return;
 
     setState(() => _isSaving = true);
 
     try {
       final db = await _database.database;
       final now = DateTime.now().toIso8601String();
-      final points = (jenis['points'] as num).toInt();
+
+      // Poin diambil dari jenis pelanggaran, bukan input manual.
+      final points = rawPoints.toInt();
 
       await db.insert('violations', {
         'student_id': _selectedStudentId,
@@ -229,10 +301,15 @@ class _CatatPelanggaranScreenState extends State<CatatPelanggaranScreen> {
       Navigator.pop(context, true);
     } catch (e) {
       if (mounted) {
-        _showMessage('Gagal menyimpan pelanggaran: $e', isError: true);
+        _showMessage(
+          'Gagal menyimpan pelanggaran: $e',
+          isError: true,
+        );
       }
     } finally {
-      if (mounted) setState(() => _isSaving = false);
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
     }
   }
 
@@ -258,196 +335,213 @@ class _CatatPelanggaranScreenState extends State<CatatPelanggaranScreen> {
         elevation: 0,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
-          child: Container(color: Colors.grey.shade200, height: 1),
+          child: Container(
+            color: Colors.grey.shade200,
+            height: 1,
+          ),
         ),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildLabel('Pilih Siswa *'),
-                  _buildDropdown<int>(
-                    value: _selectedStudentId,
-                    hint: 'Pilih siswa yang melakukan pelanggaran',
-                    items: _students.map((s) {
-                      final id = s['id'] as int;
-                      return DropdownMenuItem<int>(
-                        value: id,
-                        child: Text(
-                          '${s['name']} (${s['nis']})',
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      );
-                    }).toList(),
-                    onChanged: (id) {
-                      setState(() => _selectedStudentId = id);
-                    },
-                  ),
-                  if (_students.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.only(top: 8),
-                      child: Text(
-                        'Belum ada siswa. Tambahkan data siswa terlebih dahulu.',
-                        style: TextStyle(color: Colors.redAccent),
-                      ),
+          : RefreshIndicator(
+              onRefresh: _loadFormData,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildLabel('Pilih Siswa *'),
+                    _buildDropdown<int>(
+                      value: _selectedStudentId,
+                      hint: 'Pilih siswa yang melakukan pelanggaran',
+                      items: _students.map((s) {
+                        final id = s['id'] as int;
+                        return DropdownMenuItem<int>(
+                          value: id,
+                          child: Text(
+                            '${s['name']} (${s['nis']})',
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (id) {
+                        setState(() => _selectedStudentId = id);
+                      },
                     ),
-                  if (student != null) ...[
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF8FAFC),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.grey.shade200),
+                    if (_students.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 8),
+                        child: Text(
+                          'Belum ada siswa. Tambahkan data siswa terlebih dahulu.',
+                          style: TextStyle(color: Colors.redAccent),
+                        ),
                       ),
-                      child: Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 24,
-                            backgroundColor: const Color(0xFFE8F1FF),
-                            child: Text(
-                              student['name'].toString().isNotEmpty
-                                  ? student['name'].toString()[0].toUpperCase()
-                                  : '?',
-                              style: const TextStyle(
-                                color: Color(0xFF2C7DEB),
-                                fontWeight: FontWeight.bold,
+                    if (student != null) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: Colors.grey.shade200,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 24,
+                              backgroundColor: const Color(0xFFE8F1FF),
+                              child: Text(
+                                student['name'].toString().isNotEmpty
+                                    ? student['name']
+                                        .toString()[0]
+                                        .toUpperCase()
+                                    : '?',
+                                style: const TextStyle(
+                                  color: Color(0xFF2C7DEB),
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  student['name'].toString(),
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF0C356A),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    student['name'].toString(),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF0C356A),
+                                    ),
                                   ),
-                                ),
-                                Text(
-                                  'NIS: ${student['nis'] ?? '-'}',
-                                  style: TextStyle(
-                                    color: Colors.grey.shade600,
-                                    fontSize: 12,
+                                  Text(
+                                    'NIS: ${student['nis'] ?? '-'}',
+                                    style: TextStyle(
+                                      color: Colors.grey.shade600,
+                                      fontSize: 12,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
+                            TextButton(
+                              onPressed: _lihatDetailSiswa,
+                              child: const Text('Lihat Detail'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 24),
+                    _buildLabel('Jenis Pelanggaran *'),
+                    _buildDropdown<int>(
+                      value: _selectedViolationTypeId,
+                      hint: 'Pilih jenis pelanggaran',
+                      items: _jenisPelanggaran.map((item) {
+                        final id = item['id'] as int;
+                        return DropdownMenuItem<int>(
+                          value: id,
+                          child: Text(
+                            '${item['name']} (${item['category']})',
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          TextButton(
-                            onPressed: _lihatDetailSiswa,
-                            child: const Text('Lihat Detail'),
+                        );
+                      }).toList(),
+                      onChanged: (id) {
+                        setState(() {
+                          _selectedViolationTypeId = id;
+                          final selected = _selectedViolation;
+                          _poinController.text =
+                              selected == null ? '' : '${selected['points']}';
+                        });
+                      },
+                    ),
+                    if (_jenisPelanggaran.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 8),
+                        child: Text(
+                          'Jenis pelanggaran belum tersedia. '
+                          'Tambahkan jenis pelanggaran beserta poinnya '
+                          'melalui menu pengelolaan jenis pelanggaran.',
+                          style: TextStyle(color: Colors.redAccent),
+                        ),
+                      ),
+                    const SizedBox(height: 20),
+                    _buildLabel('Tanggal *'),
+                    InkWell(
+                      onTap: _pilihTanggal,
+                      borderRadius: BorderRadius.circular(12),
+                      child: InputDecorator(
+                        decoration: _inputDecoration(
+                          suffixIcon: const Icon(
+                            Icons.calendar_today_outlined,
+                            color: Color(0xFF2C7DEB),
+                            size: 20,
                           ),
-                        ],
+                        ),
+                        child: Text(formattedDate),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    _buildLabel('Poin Pelanggaran *'),
+                    TextField(
+                      controller: _poinController,
+                      readOnly: true,
+                      decoration: _inputDecoration(
+                        hintText: '',
+                        filled: true,
+                        fillColor: const Color(0xFFF8FAFC),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    _buildLabel('Catatan (opsional)'),
+                    TextField(
+                      controller: _catatanController,
+                      maxLines: 3,
+                      decoration: _inputDecoration(
+                        hintText: 'Masukkan catatan tambahan...',
+                      ),
+                    ),
+                    const SizedBox(height: 36),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: _isSaving ||
+                                _students.isEmpty ||
+                                _jenisPelanggaran.isEmpty
+                            ? null
+                            : _simpanPelanggaran,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF2C7DEB),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: _isSaving
+                            ? const SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text(
+                                'Simpan Pelanggaran',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                       ),
                     ),
                   ],
-                  const SizedBox(height: 24),
-                  _buildLabel('Jenis Pelanggaran *'),
-                  _buildDropdown<int>(
-                    value: _selectedViolationTypeId,
-                    hint: 'Pilih jenis pelanggaran',
-                    items: _jenisPelanggaran.map((item) {
-                      final id = item['id'] as int;
-                      return DropdownMenuItem<int>(
-                        value: id,
-                        child: Text(
-                          '${item['name']} (${item['category']})',
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      );
-                    }).toList(),
-                    onChanged: (id) {
-                      setState(() {
-                        _selectedViolationTypeId = id;
-                        final selected = _selectedViolation;
-                        _poinController.text =
-                            selected == null ? '' : '${selected['points']}';
-                      });
-                    },
-                  ),
-                  if (_jenisPelanggaran.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.only(top: 8),
-                      child: Text(
-                        'Jenis pelanggaran belum tersedia. Tambahkan jenis '
-                        'pelanggaran beserta poinnya terlebih dahulu.',
-                        style: TextStyle(color: Colors.redAccent),
-                      ),
-                    ),
-                  const SizedBox(height: 20),
-                  _buildLabel('Tanggal *'),
-                  InkWell(
-                    onTap: _pilihTanggal,
-                    borderRadius: BorderRadius.circular(12),
-                    child: InputDecorator(
-                      decoration: _inputDecoration(
-                        suffixIcon: const Icon(
-                          Icons.calendar_today_outlined,
-                          color: Color(0xFF2C7DEB),
-                          size: 20,
-                        ),
-                      ),
-                      child: Text(formattedDate),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  _buildLabel('Poin Pelanggaran *'),
-                  TextField(
-                    controller: _poinController,
-                    readOnly: true,
-                    decoration: _inputDecoration(
-                      hintText: '',
-                      filled: true,
-                      fillColor: const Color(0xFFF8FAFC),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  _buildLabel('Catatan (opsional)'),
-                  TextField(
-                    controller: _catatanController,
-                    maxLines: 3,
-                    decoration: _inputDecoration(
-                      hintText: 'Masukkan catatan tambahan...',
-                    ),
-                  ),
-                  const SizedBox(height: 36),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: _isSaving ||
-                              _students.isEmpty ||
-                              _jenisPelanggaran.isEmpty
-                          ? null
-                          : _simpanPelanggaran,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2C7DEB),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: _isSaving
-                          ? const CircularProgressIndicator(
-                              color: Colors.white,
-                            )
-                          : const Text(
-                              'Simpan Pelanggaran',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
     );
@@ -485,7 +579,10 @@ class _CatatPelanggaranScreenState extends State<CatatPelanggaranScreen> {
           value: items.any((item) => item.value == value) ? value : null,
           hint: Text(
             hint,
-            style: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+            style: TextStyle(
+              color: Colors.grey.shade400,
+              fontSize: 14,
+            ),
           ),
           isExpanded: true,
           items: items,
@@ -503,7 +600,10 @@ class _CatatPelanggaranScreenState extends State<CatatPelanggaranScreen> {
   }) {
     return InputDecoration(
       hintText: hintText,
-      hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+      hintStyle: TextStyle(
+        color: Colors.grey.shade400,
+        fontSize: 14,
+      ),
       suffixIcon: suffixIcon,
       filled: filled,
       fillColor: fillColor,
