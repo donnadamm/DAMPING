@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'register_screen.dart';
-import 'package:damping_app/data/dummy_data.dart';
 import 'dashboard_admin.dart';
 import 'dashboard_guru.dart';
 import 'dashboard_parent.dart';
+import 'dart:convert';
+import 'package:crypto/crypto.dart';
+import '../services/local_database.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -24,61 +26,96 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _handleLogin() {
-    String phone = _phoneController.text.trim();
-    String password = _passwordController.text.trim();
+  Future<void> _handleLogin() async {
+    final phone = _phoneController.text.trim();
+    final password = _passwordController.text;
 
     if (phone.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
           content: Text('Nomor HP dan Password wajib diisi!'),
-          backgroundColor: Colors.redAccent));
+          backgroundColor: Colors.redAccent,
+        ),
+      );
       return;
     }
 
-    bool isFound = false;
-    String targetRoute = '';
-    String roleName = '';
+    try {
+      final db = await LocalDatabase.instance.database;
 
-    // 1. Cek di Data Admin
-    for (var user in DummyData.admin) {
-      if (user['hp'] == phone && user['password'] == password) {
-        isFound = true;
-        targetRoute = '/dashboard_admin';
-        roleName = 'Admin';
-        break;
-      }
-    }
-    // 2. Cek di Data Guru
-    if (!isFound) {
-      for (var user in DummyData.guru) {
-        if (user['hp'] == phone && user['password'] == password) {
-          isFound = true;
-          targetRoute = '/dashboard_guru';
-          roleName = 'Guru';
-          break;
-        }
-      }
-    }
-    // 3. Cek di Data Orang Tua
-    if (!isFound) {
-      for (var user in DummyData.orangTua) {
-        if (user['hp'] == phone && user['password'] == password) {
-          isFound = true;
-          targetRoute = '/dashboard_parent';
-          roleName = 'Orang Tua';
-          break;
-        }
-      }
-    }
+      final users = await db.query(
+        'users',
+        where: 'phone = ? AND is_active = ?',
+        whereArgs: [phone, 1],
+        limit: 1,
+      );
 
-    // Eksekusi Login
-    if (isFound) {
-      _navigateToDashboard(targetRoute, roleName);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Nomor HP atau Password salah / belum terdaftar!'),
-          backgroundColor: Colors.redAccent));
+      if (users.isEmpty) {
+        if (!mounted) return;
+        _showLoginError();
+        return;
+      }
+
+      final user = users.first;
+      final savedPassword = user['password_hash']?.toString() ?? '';
+      final enteredHash = sha256.convert(utf8.encode(password)).toString();
+
+      // Mendukung akun yang password-nya tersimpan dalam format SHA-256.
+      // Perbandingan langsung hanya untuk kompatibilitas dengan data lama.
+      final passwordMatches =
+          savedPassword == enteredHash || savedPassword == password;
+
+      if (!passwordMatches) {
+        if (!mounted) return;
+        _showLoginError();
+        return;
+      }
+
+      if (!mounted) return;
+
+      final role = user['role']?.toString();
+
+      switch (role) {
+        case 'admin':
+          _navigateToDashboard('/dashboard_admin', 'Admin');
+          break;
+        case 'guru':
+          _navigateToDashboard('/dashboard_guru', 'Guru');
+          break;
+        case 'orang_tua':
+          if (user['student_id'] == null) {
+            _showLoginError(
+              'Akun orang tua belum terhubung dengan data siswa. '
+              'Hubungi admin sekolah.',
+            );
+            return;
+          }
+          _navigateToDashboard('/dashboard_parent', 'Orang Tua');
+          break;
+        default:
+          _showLoginError('Peran akun tidak dikenali.');
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal memproses login: $e'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
     }
+  }
+
+  void _showLoginError([
+    String message = 'Nomor HP atau password salah / belum terdaftar!',
+  ]) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.redAccent,
+      ),
+    );
   }
 
   void _navigateToDashboard(String route, String role) {
