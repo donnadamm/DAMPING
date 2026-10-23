@@ -15,9 +15,9 @@ class _SplashScreenState extends State<SplashScreen> {
     _navigateToLogin();
   }
 
-  void _navigateToLogin() async {
-    // Beri jeda 2 detik agar logo terlihat sempurna lalu pindah ke Login
-    await Future.delayed(const Duration(seconds: 2));
+  Future<void> _navigateToLogin() async {
+    await Future.delayed(const Duration(milliseconds: 700));
+
     if (!mounted) return;
 
     Navigator.of(context).pushReplacement(
@@ -25,9 +25,12 @@ class _SplashScreenState extends State<SplashScreen> {
         pageBuilder: (context, animation, secondaryAnimation) =>
             const LoginScreen(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(opacity: animation, child: child);
+          return FadeTransition(
+            opacity: animation,
+            child: child,
+          );
         },
-        transitionDuration: const Duration(milliseconds: 400),
+        transitionDuration: const Duration(milliseconds: 250),
       ),
     );
   }
@@ -38,15 +41,14 @@ class _SplashScreenState extends State<SplashScreen> {
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        // Gradasi warna biru presisi sesuai rancangan gambar
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFF62A7FB), // Biru terang atas
-              Color(0xFF4390F6), // Biru sedang
-              Color(0xFF2C7DEB), // Biru lembut bawah
+              Color(0xFF62A7FB),
+              Color(0xFF4390F6),
+              Color(0xFF2C7DEB),
             ],
           ),
         ),
@@ -54,8 +56,6 @@ class _SplashScreenState extends State<SplashScreen> {
           child: Column(
             children: [
               const Spacer(flex: 3),
-
-              // Logo Utama (android_fg.png)
               Image.asset(
                 'assets/android_fg.png',
                 width: 190,
@@ -63,33 +63,29 @@ class _SplashScreenState extends State<SplashScreen> {
                 fit: BoxFit.contain,
               ),
               const SizedBox(height: 20),
-
-              // Judul DAMPING
               const Text(
                 'DAMPING',
                 style: TextStyle(
                   fontSize: 34,
                   fontWeight: FontWeight.w900,
-                  color: Color(0xFF0C356A), // Biru tua gelap agar tajam & jelas
+                  color: Color(0xFF0C356A),
                   letterSpacing: 2.0,
                 ),
               ),
               const SizedBox(height: 8),
-
-              // Subtitle
-              const Text(
-                'Aplikasi Pengelolaan Pelanggaran Siswa',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF0C356A),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24),
+                child: Text(
+                  'Aplikasi Pengelolaan Pelanggaran Siswa',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF0C356A),
+                  ),
                 ),
               ),
-
               const Spacer(flex: 2),
-
-              // Tagline bawah
               const Text(
                 'Catat. Pantau. Dampingi.',
                 textAlign: TextAlign.center,
@@ -100,7 +96,6 @@ class _SplashScreenState extends State<SplashScreen> {
                   letterSpacing: 0.8,
                 ),
               ),
-
               const Spacer(flex: 2),
             ],
           ),
