@@ -5,7 +5,9 @@ import 'dashboard_guru.dart';
 import 'dashboard_parent.dart';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
-import '../services/local_database.dart';
+import 'package:damping_app/services/local_database.dart';
+
+import 'package:damping_app/data/dummy_data.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -34,112 +36,139 @@ class _LoginScreenState extends State<LoginScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Nomor HP dan Password wajib diisi!'),
-          backgroundColor: Colors.redAccent,
         ),
       );
       return;
     }
 
     try {
-      final db = await LocalDatabase.instance.database;
+      final database = await LocalDatabase.instance.database;
 
-      final users = await db.query(
+      // 1. Periksa akun yang tersimpan di SQLite.
+      final users = await database.query(
         'users',
         where: 'phone = ? AND is_active = ?',
         whereArgs: [phone, 1],
         limit: 1,
       );
 
-      if (users.isEmpty) {
-        if (!mounted) return;
-        _showLoginError();
-        return;
-      }
+      if (users.isNotEmpty) {
+        final user = users.first;
+        final storedPassword = (user['password_hash'] ?? '').toString();
 
-      final user = users.first;
-      final savedPassword = user['password_hash']?.toString() ?? '';
-      final enteredHash = sha256.convert(utf8.encode(password)).toString();
+        final hashedPassword = sha256.convert(utf8.encode(password)).toString();
 
-      // Mendukung akun yang password-nya tersimpan dalam format SHA-256.
-      // Perbandingan langsung hanya untuk kompatibilitas dengan data lama.
-      final passwordMatches =
-          savedPassword == enteredHash || savedPassword == password;
+        // Mendukung password hash dan password lama berbentuk teks.
+        final isPasswordValid =
+            storedPassword == hashedPassword || storedPassword == password;
 
-      if (!passwordMatches) {
-        if (!mounted) return;
-        _showLoginError();
-        return;
-      }
+        if (isPasswordValid) {
+          final role = (user['role'] ?? '').toString();
 
-      if (!mounted) return;
+          switch (role) {
+            case 'admin':
+              _navigateToDashboard('Admin');
+              return;
 
-      final role = user['role']?.toString();
+            case 'guru':
+              _navigateToDashboard('Guru');
+              return;
 
-      switch (role) {
-        case 'admin':
-          _navigateToDashboard('/dashboard_admin', 'Admin');
-          break;
-        case 'guru':
-          _navigateToDashboard('/dashboard_guru', 'Guru');
-          break;
-        case 'orang_tua':
-          if (user['student_id'] == null) {
-            _showLoginError(
-              'Akun orang tua belum terhubung dengan data siswa. '
-              'Hubungi admin sekolah.',
-            );
-            return;
+            case 'orang_tua':
+              _navigateToDashboard('Orang Tua');
+              return;
+
+            default:
+              _showLoginError('Role pengguna tidak dikenali.');
+              return;
           }
-          _navigateToDashboard('/dashboard_parent', 'Orang Tua');
-          break;
-        default:
-          _showLoginError('Peran akun tidak dikenali.');
-      }
-    } catch (e) {
-      if (!mounted) return;
+        }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Gagal memproses login: $e'),
-          backgroundColor: Colors.redAccent,
-        ),
+        _showLoginError('Nomor HP atau Password salah!');
+      }
+
+      // 2. Jika akun belum ada di database, periksa DummyData
+      // agar akun lama, termasuk Admin, tetap bisa digunakan.
+      final legacyAccounts = [
+        ...DummyData.admin,
+        ...DummyData.guru,
+        ...DummyData.orangTua,
+      ];
+
+      Map<String, dynamic>? matchedUser;
+
+      for (final account in legacyAccounts) {
+        if (account['hp'] == phone && account['password'] == password) {
+          matchedUser = account;
+          break;
+        }
+      }
+
+      if (matchedUser != null) {
+        final role = (matchedUser['role'] ?? '').toString();
+
+        if (role == 'Admin') {
+          _navigateToDashboard('Admin');
+        } else if (role.startsWith('Guru')) {
+          _navigateToDashboard('Guru');
+        } else if (role == 'Orang Tua') {
+          _navigateToDashboard('Orang Tua');
+        } else {
+          _showLoginError('Role pengguna tidak dikenali.');
+        }
+        return;
+      }
+
+      _showLoginError(
+        'Nomor HP atau Password salah / belum terdaftar!',
+      );
+    } catch (e) {
+      debugPrint('Login error: $e');
+      _showLoginError(
+        'Terjadi kesalahan saat login. Coba lagi.',
       );
     }
   }
 
-  void _showLoginError([
-    String message = 'Nomor HP atau password salah / belum terdaftar!',
-  ]) {
+  void _showLoginError(String message) {
+    if (!mounted) return;
+
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.redAccent,
-      ),
+      SnackBar(content: Text(message)),
     );
   }
 
-  void _navigateToDashboard(String route, String role) {
+  void _navigateToDashboard(String role) {
+    if (!mounted) return;
+
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-          content: Text('Login Berhasil sebagai $role'),
-          backgroundColor: Colors.green),
+      SnackBar(content: Text('Login berhasil sebagai $role')),
     );
 
-    // Gunakan MaterialPageRoute agar terhindar dari error RouteNotFoud
-    if (role == 'Admin') {
-      Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-              builder: (context) => const DashboardAdminScreen()));
-    } else if (role == 'Guru') {
-      Navigator.pushReplacement(context,
-          MaterialPageRoute(builder: (context) => const DashboardGuruScreen()));
-    } else if (role == 'Orang Tua') {
-      Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-              builder: (context) => const DashboardParentScreen()));
+    late final Widget dashboard;
+
+    switch (role) {
+      case 'Admin':
+        dashboard = const DashboardAdminScreen();
+        break;
+
+      case 'Guru':
+        dashboard = const DashboardGuruScreen();
+        break;
+
+      case 'Orang Tua':
+        dashboard = const DashboardParentScreen();
+        break;
+
+      default:
+        _showLoginError('Dashboard tidak ditemukan.');
+        return;
     }
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => dashboard),
+    );
   }
 
   @override
